@@ -1,24 +1,17 @@
 package org.firstinspires.ftc.teamcode.code;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-@Config
 @Autonomous
 public class Right extends LinearOpMode {
     Materials M = new Materials();
-    BackgroundThread BT = new BackgroundThread();
-    PerformingThread PT = new PerformingThread();
-
-    public static double TranslationalKp = 0.14, TranslationalKd = 0.7,
-            TurnKp = 0.026, TurnKd = 0.08, AccelKp = 1.6, WallPushingPower = 0.4;
 
     @Override
     public void runOpMode() throws InterruptedException {
         M.Init(hardwareMap, false);
-        BT.start();
+        new BackgroundThread().start();
 
         while (!isStarted() && !isStopRequested()) {
             telemetry.addLine("Ready!");
@@ -26,18 +19,14 @@ public class Right extends LinearOpMode {
         }
         telemetry.addLine();
         telemetry.update();
-        PT.start();
-
-        while (!isStopRequested()) ;
+        new PerformingThread().start();
 
         Materials.AngleStorage = Math.toDegrees(M.Drive.getPoseEstimate().getHeading());
     }
 
     class PerformingThread extends Thread {
-        DrivingThread DT = new DrivingThread();
-
         public void run() {
-            DT.start();
+            new DrivingThread().start();
 
             while (!isStopRequested()) ;
         }
@@ -46,20 +35,21 @@ public class Right extends LinearOpMode {
             public void run() {
                 Vector2D LastXYErrorVec = new Vector2D();
                 double LastAngleError = 0;
-                while (!isStopRequested()) {
+                while (!M.StopRequested) {
                     Vector2D XYErrorVec = new Vector2D(M.TargetX - M.Drive.getPoseEstimate().getX(), M.TargetY - M.Drive.getPoseEstimate().getY());
                     boolean LocalWallPushing = M.WallPushing;
-                    Vector2D SFPowerVec = (LocalWallPushing ?
-                            new Vector2D(XYErrorVec.x * TranslationalKp + (XYErrorVec.x - LastXYErrorVec.x) * TranslationalKd, -WallPushingPower) :
-                            XYErrorVec.getMultiplied(TranslationalKp).getAdded(XYErrorVec.getSubtracted(LastXYErrorVec).getMultiplied(TranslationalKd)))
+                    Vector2D SFPowerVec = (LocalWallPushing ? new Vector2D(XYErrorVec.x * Materials.TranslationalKp +
+                            (XYErrorVec.x - LastXYErrorVec.x) * Materials.TranslationalKd, -Materials.WallPushingPower) :
+                            XYErrorVec.getMultiplied(Materials.TranslationalKp)
+                                    .getAdded(XYErrorVec.getSubtracted(LastXYErrorVec).getMultiplied(Materials.TranslationalKd)))
                             .getRotatedBy(-M.Drive.getPoseEstimate().getHeading());
                     if (SFPowerVec.getLength() > 1) SFPowerVec.normalize();
                     LastXYErrorVec.set(XYErrorVec);
 
                     double AngleError = M.MinAngleError(M.TargetAngle - Math.toDegrees(M.Drive.getPoseEstimate().getHeading()));
                     M.Drive.setWeightedDrivePower(new Pose2d(SFPowerVec.x, SFPowerVec.y,
-                            M.Limit(AngleError * TurnKp + (AngleError - LastAngleError) * TurnKd, 1)
-                    ).times(LocalWallPushing ? 1 : Math.min(1, M.AccelTimer.seconds() * AccelKp)));
+                            M.Limit(AngleError * Materials.TurnKp + (AngleError - LastAngleError) * Materials.TurnKd, 1)
+                    ).times(LocalWallPushing ? 1 : Math.min(1, M.AccelTimer.seconds() * Materials.AccelKp)));
                     M.Drive.update();
                     LastAngleError = AngleError;
                 }

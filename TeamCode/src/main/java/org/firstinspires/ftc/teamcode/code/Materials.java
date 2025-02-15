@@ -15,13 +15,21 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 public class Materials {
     // 192.168.43.1:8080/dash
 
-    public static double AngleStorage = 90, ExtenderKp = 0.012, ExtenderResetPower = -0.8, ExtenderMaxPos = 540,
+    public static double AngleStorage = 90, TranslationalKp = 0.14, TranslationalKd = 0.7,
+            TurnKp = 0.026, TurnKd = 0.08, AccelKp = 1.6, WallPushingPower = 0.4,
+            ExtenderKp = 0.012, ExtenderResetPower = -0.8, ExtenderMaxPos = 540,
             LiftRegularKp = 0.008, LiftMaxKp = 0.1, LiftResetPower = -0.3, LiftPushingStart = 1, LiftPushingAccel = 0.08,
             LiftWallCheckPos = 150, LiftClippingPos = 330, LiftBasketPos = 840,
 
     SwingInsidePos = 0.06, SwingTransferPos = 0.3, SwingCheckPos = 0.4, SwingPreparePos = 0.45, SwingBottomPos = 0.55,
             PawFoldPos = 0, PawThrowPos = 0.2, PawTransferPos = 0.33, PawStartRotation = 0.52, PawAngleMultiply = 0.0017,
-            LowerClawClosedPos = 0.79, LowerClawMidPos = 0.72, LowerClawOpenedPos = 0.57;
+            LowerClawClosedPos = 0.79, LowerClawMidPos = 0.72, LowerClawOpenedPos = 0.57,
+
+    MiniExtenderTransferPos = 0.42, MiniExtenderWallPos = 0.48, MiniExtenderPreparePos = 0.48, MiniExtenderClippingPos = 0.68,
+            TurretStartPos = 0.8, TurretAngleMultiply = 0.0037,
+            ElbowTransferPos = 0.78, ElbowPreparePos = 0.71, ElbowClippingPos = 0.71, ElbowBasketPos = 0.21, ElbowWallPos = 0.23,
+            WristTransferPos = 0.68, WristClippingPos = 0.63, WristStraightPos = 0.52, WristWallPos = 0.33,
+            UpperClawOpenedPos = 0.46, UpperClawClosedPos = 0.94;
 
     public ElapsedTime AccelTimer = new ElapsedTime(), LiftPushingTimer = new ElapsedTime();
 

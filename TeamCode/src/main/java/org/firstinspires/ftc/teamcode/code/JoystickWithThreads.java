@@ -8,15 +8,15 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @TeleOp
 public class JoystickWithThreads extends LinearOpMode {
     Materials M = new Materials();
-    BackgroundThread BT = new BackgroundThread();
     LowerChainThread LCT = new LowerChainThread();
+    UpperChainThread UCT = new UpperChainThread();
 
-    int LowerChainState = 0;
+    int LowerChainState = 0, UpperChainThread = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
         M.Init(hardwareMap, true);
-        BT.start();
+        new BackgroundThread().start();
 
         while ((M.NeedToResetExtender || !isStarted()) && !isStopRequested()) {
             telemetry.addData("Extender", !M.NeedToResetExtender);
@@ -185,6 +185,19 @@ public class JoystickWithThreads extends LinearOpMode {
                     }
                     // Up
                     break;
+            }
+        }
+    }
+
+    class UpperChainThread extends Thread {
+        private String Action;
+
+        public void SetAction(String Action) {
+            this.Action = Action;
+        }
+
+        public void run() {
+            switch (Action) {
             }
         }
     }
