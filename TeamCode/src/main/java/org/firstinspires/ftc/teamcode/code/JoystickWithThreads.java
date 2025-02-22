@@ -8,8 +8,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @TeleOp
 public class JoystickWithThreads extends LinearOpMode {
     Materials M = new Materials();
-    LowerChainThread LCT = new LowerChainThread();
-    UpperChainThread UCT = new UpperChainThread();
+    LowerThread LT = new LowerThread();
+    UpperThread UT = new UpperThread();
 
     int LowerChainState = 0, UpperChainThread = 0;
 
@@ -18,12 +18,7 @@ public class JoystickWithThreads extends LinearOpMode {
         M.Init(hardwareMap, true);
         new BackgroundThread().start();
 
-        while ((M.NeedToResetExtender || !isStarted()) && !isStopRequested()) {
-            telemetry.addData("Extender", !M.NeedToResetExtender);
-            telemetry.update();
-        }
-        telemetry.addLine();
-        telemetry.update();
+        while ((M.NeedToResetExtender || !isStarted()) && !isStopRequested()) ;
 
         boolean APressed = false, XPressed = false, YPressed = false, BPressed = false, RBPressed = false;
         while (!isStopRequested()) {
@@ -34,44 +29,44 @@ public class JoystickWithThreads extends LinearOpMode {
                     -gamepad1.right_stick_x).times(0.3 + (gamepad1.right_trigger * 0.7)));
             M.Drive.update();
 
-            if (gamepad1.a && !APressed && !LCT.isAlive() && LowerChainState == 1) {
+            if (gamepad1.a && !APressed && !LT.isAlive() && LowerChainState == 1) {
                 APressed = true;
-                LCT.SetAction("LowerIntake");
-                LCT.start();
+                LT.SetAction("LowerIntake");
+                LT.start();
             }
             if (!gamepad1.a) APressed = false;
 
-            if (gamepad1.x && !XPressed && !LCT.isAlive()) {
+            if (gamepad1.x && !XPressed && !LT.isAlive()) {
                 if (LowerChainState == 2) {
                     XPressed = true;
-                    LCT.SetAction("PrepareThrow");
-                    LCT.start();
+                    LT.SetAction("PrepareThrow");
+                    LT.start();
                 } else if (LowerChainState == 3) {
                     XPressed = true;
-                    LCT.SetAction("WallIntake");
-                    LCT.start();
+                    LT.SetAction("WallIntake");
+                    LT.start();
                 }
             }
             if (!gamepad1.x) XPressed = false;
 
-            if (gamepad1.y && !YPressed && !LCT.isAlive() && (LowerChainState == 1 || LowerChainState == 2)) {
+            if (gamepad1.y && !YPressed && !LT.isAlive() && (LowerChainState == 1 || LowerChainState == 2)) {
                 YPressed = true;
-                LCT.SetAction("PushIn");
-                LCT.start();
+                LT.SetAction("PushIn");
+                LT.start();
             }
             if (!gamepad1.y) YPressed = false;
 
-            if (gamepad1.b && !BPressed && !LCT.isAlive() && LowerChainState > 1) {
+            if (gamepad1.b && !BPressed && !LT.isAlive() && LowerChainState > 1) {
                 BPressed = true;
-                LCT.SetAction("ToActivatedState");
-                LCT.start();
+                LT.SetAction("ToActivatedState");
+                LT.start();
             }
             if (!gamepad1.b) BPressed = false;
 
-            if (gamepad1.right_bumper && !RBPressed && !LCT.isAlive()) {
+            if (gamepad1.right_bumper && !RBPressed && !LT.isAlive()) {
                 RBPressed = true;
-                LCT.SetAction(LowerChainState == 0 ? "ToActivatedState" : "ToDeactivatedState");
-                LCT.start();
+                LT.SetAction(LowerChainState == 0 ? "ToActivatedState" : "ToDeactivatedState");
+                LT.start();
             }
             if (!gamepad1.right_bumper) RBPressed = false;
         }
@@ -79,9 +74,9 @@ public class JoystickWithThreads extends LinearOpMode {
     }
 
     boolean ExtenderActive = false;
-    int SwingState = 0, PawState = 0;
+    int SwingState = 0, PawState = 0, TurretState = 0;
 
-    class LowerChainThread extends Thread {
+    class LowerThread extends Thread {
         private String Action;
 
         public void SetAction(String Action) {
@@ -189,7 +184,7 @@ public class JoystickWithThreads extends LinearOpMode {
         }
     }
 
-    class UpperChainThread extends Thread {
+    class UpperThread extends Thread {
         private String Action;
 
         public void SetAction(String Action) {
@@ -205,6 +200,10 @@ public class JoystickWithThreads extends LinearOpMode {
     class BackgroundThread extends Thread {
         public void run() {
             M.LowerClaw.setPosition(Materials.LowerClawMidPos);
+            M.MiniExtender.setPosition(Materials.MiniExtenderWallPos);
+            M.Elbow.setPosition(Materials.ElbowWallPos);
+            M.Wrist.setPosition(Materials.WristWallPos);
+            M.UpperClaw.setPosition(Materials.UpperClawOpenedPos);
 
             double PawHeading = Math.toRadians(90), PawCurrentAngle = 0;
             boolean ExtenderBorder = false;
@@ -232,7 +231,7 @@ public class JoystickWithThreads extends LinearOpMode {
                         LocalSwingState == 0 ? Materials.SwingInsidePos : LocalSwingState == 1 ? Materials.SwingTransferPos : Materials.SwingCheckPos);
 
                 Vector2D RightStick2Vec = new Vector2D(gamepad2.right_stick_x, -gamepad2.right_stick_y);
-                if (RightStick2Vec.getLength() > 0.9) PawHeading = RightStick2Vec.getAngle();
+                if (RightStick2Vec.getLength() > 0.8) PawHeading = RightStick2Vec.getAngle();
                 else if (gamepad1.touchpad_finger_1)
                     PawHeading = new Vector2D(gamepad1.touchpad_finger_1_x, gamepad1.touchpad_finger_1_y).getAngle();
                 int LocalPawState = PawState;
@@ -247,6 +246,14 @@ public class JoystickWithThreads extends LinearOpMode {
                     M.SetPaw(LocalPawState == 0 ? Materials.PawFoldPos : LocalPawState == 1 ? Materials.PawThrowPos :
                             Materials.PawTransferPos, PawCurrentAngle);
                 }
+
+                double LocalTurretState = TurretState;
+                M.Turret.setPosition(Materials.TurretStartPos + (LocalTurretState == 0 ? 0 : M.Limit(
+                        M.MinAngleError((LocalTurretState == 1 ? 90 : 45) -
+                                Math.toDegrees(M.Drive.getPoseEstimate().getHeading())), 20)));
+
+                telemetry.addData("Extender", !M.NeedToResetExtender);
+                telemetry.update();
             }
             M.StopRequested = true;
             M.Extender.setPower(0);

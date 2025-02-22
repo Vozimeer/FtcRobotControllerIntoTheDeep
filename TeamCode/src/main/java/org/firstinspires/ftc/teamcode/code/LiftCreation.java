@@ -6,16 +6,13 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @TeleOp
 public class LiftCreation extends LinearOpMode {
     Materials M = new Materials();
-    BackgroundThread BT = new BackgroundThread();
 
     @Override
     public void runOpMode() throws InterruptedException {
         M.Init(hardwareMap, false);
-        BT.start();
+        new BackgroundThread().start();
 
         while ((M.NeedToResetLift || !isStarted()) && !isStopRequested()) ;
-        telemetry.addLine();
-        telemetry.update();
 
         boolean APressed = false, Up = false;
         while (!isStopRequested()) {

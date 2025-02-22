@@ -21,7 +21,7 @@ public class Joystick extends LinearOpMode {
             telemetry.addData("Extender", !M.NeedToResetExtender);
             telemetry.update();
         }
-        telemetry.addLine();
+        telemetry.clearAll();
         telemetry.update();
         CUBT.start();
 
