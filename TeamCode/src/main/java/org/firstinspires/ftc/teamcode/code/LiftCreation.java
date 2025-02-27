@@ -10,39 +10,14 @@ public class LiftCreation extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         M.Init(hardwareMap, false);
-        new BackgroundThread().start();
 
-        while ((M.NeedToResetLift || !isStarted()) && !isStopRequested()) ;
+        while (!isStarted() && !isStopRequested()) ;
 
-        boolean APressed = false, Up = false;
         while (!isStopRequested()) {
-            if (gamepad1.a && !APressed) {
-                APressed = true;
-                if (Up) {
-                    M.SetTargetLiftPos(Materials.LiftWallCheckPos);
-                    M.WaitLift();
-                    M.NeedToResetLift = true;
-                    while (M.NeedToResetLift && !isStopRequested()) ;
-                } else {
-                    M.SetTargetLiftPos(Materials.LiftBasketPos);
-                }
-                Up = !Up;
-            }
-            if (!gamepad1.a) APressed = false;
+            M.SetLiftPower(-gamepad1.left_stick_y);
+            telemetry.addData("LeftLift", M.LeftLift.getCurrentPosition());
+            telemetry.update();
         }
-    }
-
-    class BackgroundThread extends Thread {
-        public void run() {
-            while (!isStopRequested()) {
-                M.LiftUpdate();
-
-                telemetry.addData("NeedToReset", M.NeedToResetLift);
-                telemetry.addData("PosError", M.LiftPosError());
-                telemetry.update();
-            }
-            M.StopRequested = true;
-            M.SetLiftPower(0);
-        }
+        M.SetLiftPower(0);
     }
 }

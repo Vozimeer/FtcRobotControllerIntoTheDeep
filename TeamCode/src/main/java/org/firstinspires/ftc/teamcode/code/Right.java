@@ -26,6 +26,8 @@ public class Right extends LinearOpMode {
         new DrivingThread().start();
         M.InitOpenCV(hardwareMap, Red);
 
+        while (!isStopRequested()) ;
+
         Materials.AngleStorage = Math.toDegrees(M.Drive.getPoseEstimate().getHeading());
     }
 
@@ -80,18 +82,14 @@ public class Right extends LinearOpMode {
             M.UpperClaw.setPosition(Materials.UpperClawClosedPos);
 
             while (!isStopRequested()) {
-                M.Extender.setPower(M.NeedToResetExtender ? Materials.ExtenderResetPower : M.ExtenderToPosPower());
-                if (M.NeedToResetExtender && M.ExtenderDownEnd.isPressed()) {
-                    M.ExtenderDownPos = M.Extender.getCurrentPosition();
-                    M.TargetExtenderPos = 0;
-                    M.NeedToResetExtender = false;
-                }
+                M.Extender.setPower(M.NeedToResetExtender ? M.ExtenderResetPower() : M.ExtenderToPosPower());
+                M.ExtenderResetIf();
 
                 M.LiftUpdate();
 
                 telemetry.addLine(Red ? "Red" : "Blue");
-                telemetry.addData("Extender", !M.NeedToResetExtender);
-                telemetry.addData("Lift", !M.NeedToResetLift);
+                telemetry.addData("NeedToResetExtender", M.NeedToResetExtender);
+                telemetry.addData("NeedToResetLift", M.NeedToResetLift);
                 telemetry.update();
             }
             M.StopRequested = true;

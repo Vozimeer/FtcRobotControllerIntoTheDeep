@@ -24,28 +24,35 @@ public class Materials {
 
     public static double AngleStorage = 90, TranslationalKp = 0.14, TranslationalKd = 0.7,
             TurnKp = 0.026, TurnKd = 0.08, AccelKp = 1.6, WallPushingPower = 0.4,
-            ExtenderKp = 0.012, ExtenderResetPower = -0.8, ExtenderWaitAccuracy = 20, ExtenderMaxPos = 540,
-            LiftRegularKp = 0.008, LiftMaxKp = 0.1, LiftResetPower = -0.3, LiftWaitAccuracy = 20, LiftPushingStart = 1, LiftPushingAccel = 0.08,
-            LiftWallCheckPos = 150, LiftClippingPos = 330, LiftBasketPos = 840,
 
-    SwingInsidePos = 0.06, SwingTransferPos = 0.3, SwingCheckPos = 0.4, SwingPreparePos = 0.45, SwingBottomPos = 0.55,
-            PawFoldPos = 0, PawThrowPos = 0.2, PawTransferPos = 0.33, PawStartRotation = 0.52, PawAngleMultiply = 0.0017,
-            LowerClawClosedPos = 0.79, LowerClawMidPos = 0.72, LowerClawOpenedPos = 0.57,
+    ExtenderKp = 0.012, ExtenderFastResetPower = -1, ExtenderSlowResetPower = -0.5,
+            ExtenderSlowResetZone = 250, ExtenderPosAccuracy = 20,
 
-    MiniExtenderTransferPos = 0.42, MiniExtenderWallPos = 0.48, MiniExtenderPreparePos = 0.48, MiniExtenderClippingPos = 0.68,
-            TurretStartPos = 0.8, TurretAngleMultiply = 0.0037,
-            ElbowTransferPos = 0.78, ElbowPreparePos = 0.71, ElbowClippingPos = 0.71, ElbowBasketPos = 0.21, ElbowWallPos = 0.23,
-            WristTransferPos = 0.68, WristClippingPos = 0.63, WristStraightPos = 0.52, WristWallPos = 0.33,
-            UpperClawOpenedPos = 0.46, UpperClawClosedPos = 0.94;
+    LiftMinKp = 0.008, LiftMaxKp = 0.08, LiftResetPower = -0.5, LiftWaitAccuracy = 20,
+            LiftPushingStartSeconds = 0.8, LiftPushingAccel = 0.06,
+            LiftThrowPos = 300, LiftClippingPos = 740, LiftBasketPos = 1300,
+
+    SwingInsidePos = 0.04, SwingTransferPos = 0.27, SwingCheckPos = 0.4, SwingPreparePos = 0.45, SwingBottomPos = 0.58,
+            PawFoldPos = 0.02, PawThrowPos = 0.16, PawTransferPos = 0.35, PawStartRotation = 0.52, PawAngleMultiply = 0.0017,
+            LowerClawHardPos = 0.82, LowerClawSoftPos = 0.788, LowerClawMidPos = 0.72, LowerClawOpenedPos = 0.6,
+
+    MiniExtenderTransferPos = 0.414, MiniExtenderWallPos = 0.486, MiniExtenderClippingPos = 0.68,
+            TurretStartPos = 0.21, TurretAngleMultiply = 0.0037,
+            ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.68, ElbowClippingPos = 0.74,
+            ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.23,
+            WristTransferPos = 0.7, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.35,
+            UpperClawOpenedPos = 0.82, UpperClawClosedPos = 0.96;
 
     public SampleDetectionPipeline SDP;
 
-    public ElapsedTime AccelTimer = new ElapsedTime(), LiftPushingTimer = new ElapsedTime();
+    public ElapsedTime AccelTimer = new ElapsedTime(), ExtenderResetTimer = new ElapsedTime(),
+            LiftResetTimer = new ElapsedTime(), LiftPushingTimer = new ElapsedTime();
 
     public double TargetX = 0, TargetY = 0, TargetAngle = 90,
             ExtenderDownPos = 0, TargetExtenderPos = 0, LiftDownPos = 0, TargetLiftPos = 0;
 
-    public boolean StopRequested = false, WallPushing = false, NeedToResetExtender = true, NeedToResetLift = true;
+    public boolean StopRequested = false, WallPushing = false, ExtenderBorder = false,
+            NeedToResetExtender = true, NeedToResetLift = true;
 
     public SampleMecanumDrive Drive;
     public DcMotorEx Extender, LeftLift, RightLift;
@@ -100,7 +107,7 @@ public class Materials {
         Webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
             public void onOpened() {
-                Webcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+                Webcam.startStreaming(320, 240, OpenCvCameraRotation.UPSIDE_DOWN);
             }
 
             @Override
@@ -123,8 +130,19 @@ public class Materials {
         return ExtenderPosError() * ExtenderKp;
     }
 
-    public void WaitExtender() {
-        while (Math.abs(ExtenderPosError()) > ExtenderWaitAccuracy && !StopRequested) ;
+    public double ExtenderResetPower() {
+        return ExtenderPos() < ExtenderSlowResetZone && !ExtenderDownEnd.isPressed() ? ExtenderSlowResetPower : ExtenderFastResetPower;
+    }
+
+    public void ExtenderResetIf() {
+        if (NeedToResetExtender && ExtenderDownEnd.isPressed()) {
+            if (ExtenderResetTimer.milliseconds() > 250) {
+                ExtenderDownPos = Extender.getCurrentPosition();
+                TargetExtenderPos = 0;
+                ExtenderBorder = false;
+                NeedToResetExtender = false;
+            }
+        } else ExtenderResetTimer.reset();
     }
 
 
@@ -138,32 +156,30 @@ public class Materials {
     }
 
     public void SetLiftPower(double Power) {
-        LeftLift.setPower(Power);
-        RightLift.setPower(-Power);
+        LeftLift.setPower(-Power);
+        RightLift.setPower(Power);
     }
 
     public void LiftUpdate() {
         double LiftPushingTimerSeconds = LiftPushingTimer.seconds();
         SetLiftPower(NeedToResetLift ? LiftResetPower : Math.max(0, LiftPosError() *
-                Math.min(LiftMaxKp, LiftRegularKp + (LiftPushingTimerSeconds > LiftPushingStart ?
-                        (LiftPushingTimerSeconds - LiftPushingStart) * LiftPushingAccel : 0))));
+                Math.min(LiftMaxKp, LiftMinKp + (LiftPushingTimerSeconds > LiftPushingStartSeconds ?
+                        (LiftPushingTimerSeconds - LiftPushingStartSeconds) * LiftPushingAccel : 0))));
         if (NeedToResetLift && (!LeftLiftDownEnd.getState() || !RightLiftDownEnd.getState())) {
-            LiftDownPos = LeftLift.getCurrentPosition();
-            SetTargetLiftPos(0);
-            NeedToResetLift = false;
-        }
-    }
-
-    public void WaitLift() {
-        while (Math.abs(LiftPosError()) > LiftWaitAccuracy && !StopRequested) ;
+            if (LiftResetTimer.milliseconds() > 250) {
+                LiftDownPos = LeftLift.getCurrentPosition();
+                SetTargetLiftPos(0);
+                NeedToResetLift = false;
+            }
+        } else LiftResetTimer.reset();
     }
 
 
     public void SetPaw(double Pos, double Angle) {
         double PawRotation = PawStartRotation + Limit(Angle, 90) * PawAngleMultiply;
 
-        LeftPawGear.setPosition(Pos + PawRotation);
-        RightPawGear.setPosition(-Pos + PawRotation);
+        LeftPawGear.setPosition(-Pos + PawRotation);
+        RightPawGear.setPosition(Pos + PawRotation);
     }
 
 
