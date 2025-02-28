@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @Config
 @TeleOp
 public class Joystick extends LinearOpMode {
-    public static double ExtenderCorrectionKp = 0.0004;
+    public static double ExtenderCorrectionZone = 150, ExtenderCorrectionKp = 1.28;
 
     Materials M = new Materials();
     LowerThread LT = new LowerThread();
@@ -28,7 +28,7 @@ public class Joystick extends LinearOpMode {
             if (gamepad1.dpad_right) M.Drive.setPoseEstimate(new Pose2d(0, 0, Math.toRadians(90)));
 
             double Multiply = 0.3 + (gamepad1.right_trigger * 0.7),
-                    ExtenderCorrection = 1 + Math.max(0, M.ExtenderPos() * ExtenderCorrectionKp);
+                    ExtenderCorrection = M.ExtenderPos() > ExtenderCorrectionZone ? ExtenderCorrectionKp : 1;
             Vector2D PreparedLeftStickVector = new Vector2D(gamepad1.left_stick_y, gamepad1.left_stick_x)
                     .getRotatedBy(-M.Drive.getPoseEstimate().getHeading()).getMultiplied(Multiply);
             double TurnSpeed = -gamepad1.right_stick_x * Multiply,
@@ -49,7 +49,7 @@ public class Joystick extends LinearOpMode {
             if (gamepad1.a && !APressed && !LT.isAlive()) {
                 if (LowerChainState == 1) {
                     if (UT.isAlive()) {
-                        if (!UT.Action.equals("WallIntake")) {
+                        if (UT.Action.equals("ToWallPrepare")) {
                             APressed = true;
                             LT.SetAction("LowerIntake");
                             LT.start();
@@ -69,7 +69,7 @@ public class Joystick extends LinearOpMode {
 
             if (gamepad1.x && !XPressed && !UT.isAlive() && UpperChainState == 0) {
                 if (LT.isAlive()) {
-                    if (!LT.Action.equals("LowerIntake") && !LT.Action.equals("PrepareThrow") && !LT.Action.equals("Transfer")) {
+                    if (LT.Action.equals("ToActivatedState") || LT.Action.equals("ToDeactivatedState") || LT.Action.equals("PushIn")) {
                         XPressed = true;
                         UT.SetAction("WallIntake");
                         UT.start();
@@ -219,13 +219,14 @@ public class Joystick extends LinearOpMode {
                     M.Elbow.setPosition(Materials.ElbowTransferPreparePos);
                     M.Wrist.setPosition(Materials.WristTransferPos);
                     SwingState = 1;
-                    M.Wait(350);
+                    M.Wait(100);
                     while (M.ExtenderPos() > 30 && !isStopRequested()) {
                         Joystick.this.sleep(10);
                     }
                     M.LowerClaw.setPosition(Materials.LowerClawHardPos);
+                    M.Wait(50);
                     PawState = 2;
-                    M.Wait(200);
+                    M.Wait(300);
                     M.Elbow.setPosition(Materials.ElbowTransferPos);
                     M.Wait(150);
 

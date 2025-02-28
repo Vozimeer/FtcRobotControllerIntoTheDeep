@@ -11,7 +11,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.teamcode.code.camera.SampleDetectionPipeline;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
@@ -22,22 +21,19 @@ import org.openftc.easyopencv.OpenCvWebcam;
 public class Materials {
     // 192.168.43.1:8080/dash
 
-    public static double AngleStorage = 90, TranslationalKp = 0.14, TranslationalKd = 0.7,
-            TurnKp = 0.026, TurnKd = 0.08, AccelKp = 1.6, WallPushingPower = 0.4,
+    public static double AngleStorage = 90, ExtenderKp = 0.012, ExtenderFastResetPower = -1, ExtenderSlowResetPower = -0.5,
+            ExtenderSlowResetZone = 250, ExtenderWaitAccuracy = 20,
 
-    ExtenderKp = 0.012, ExtenderFastResetPower = -1, ExtenderSlowResetPower = -0.5,
-            ExtenderSlowResetZone = 250, ExtenderPosAccuracy = 20,
-
-    LiftMinKp = 0.008, LiftMaxKp = 0.08, LiftResetPower = -0.5, LiftWaitAccuracy = 20,
+    LiftMinKp = 0.008, LiftMaxKp = 0.08, LiftResetPower = -0.2, LiftWaitAccuracy = 20,
             LiftPushingStartSeconds = 0.8, LiftPushingAccel = 0.06,
             LiftThrowPos = 300, LiftClippingPos = 740, LiftBasketPos = 1300,
 
-    SwingInsidePos = 0.04, SwingTransferPos = 0.27, SwingCheckPos = 0.4, SwingPreparePos = 0.45, SwingBottomPos = 0.58,
+    SwingInsidePos = 0.04, SwingTransferPos = 0.27, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
             PawFoldPos = 0.02, PawThrowPos = 0.16, PawTransferPos = 0.35, PawStartRotation = 0.52, PawAngleMultiply = 0.0017,
-            LowerClawHardPos = 0.82, LowerClawSoftPos = 0.788, LowerClawMidPos = 0.72, LowerClawOpenedPos = 0.6,
+            LowerClawHardPos = 0.82, LowerClawSoftPos = 0.79, LowerClawMidPos = 0.72, LowerClawOpenedPos = 0.6,
 
     MiniExtenderTransferPos = 0.414, MiniExtenderWallPos = 0.486, MiniExtenderClippingPos = 0.68,
-            TurretStartPos = 0.21, TurretAngleMultiply = 0.0037,
+            TurretStartPos = 0.2, TurretAngleMultiply = 0.0037,
             ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.68, ElbowClippingPos = 0.74,
             ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.23,
             WristTransferPos = 0.7, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.35,
@@ -45,13 +41,11 @@ public class Materials {
 
     public SampleDetectionPipeline SDP;
 
-    public ElapsedTime AccelTimer = new ElapsedTime(), ExtenderResetTimer = new ElapsedTime(),
-            LiftResetTimer = new ElapsedTime(), LiftPushingTimer = new ElapsedTime();
+    public ElapsedTime ExtenderResetTimer = new ElapsedTime(), LiftResetTimer = new ElapsedTime(), LiftPushingTimer = new ElapsedTime();
 
-    public double TargetX = 0, TargetY = 0, TargetAngle = 90,
-            ExtenderDownPos = 0, TargetExtenderPos = 0, LiftDownPos = 0, TargetLiftPos = 0;
+    public double ExtenderDownPos = 0, TargetExtenderPos = 0, LiftDownPos = 0, TargetLiftPos = 0;
 
-    public boolean StopRequested = false, WallPushing = false, ExtenderBorder = false,
+    public boolean StopRequested = false, ExtenderBorder = false,
             NeedToResetExtender = true, NeedToResetLift = true;
 
     public SampleMecanumDrive Drive;
@@ -166,7 +160,7 @@ public class Materials {
                 Math.min(LiftMaxKp, LiftMinKp + (LiftPushingTimerSeconds > LiftPushingStartSeconds ?
                         (LiftPushingTimerSeconds - LiftPushingStartSeconds) * LiftPushingAccel : 0))));
         if (NeedToResetLift && (!LeftLiftDownEnd.getState() || !RightLiftDownEnd.getState())) {
-            if (LiftResetTimer.milliseconds() > 250) {
+            if (LiftResetTimer.milliseconds() > 500) {
                 LiftDownPos = LeftLift.getCurrentPosition();
                 SetTargetLiftPos(0);
                 NeedToResetLift = false;

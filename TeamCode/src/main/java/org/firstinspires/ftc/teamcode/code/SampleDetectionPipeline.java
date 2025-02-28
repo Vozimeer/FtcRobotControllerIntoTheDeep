@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.code.camera;
+package org.firstinspires.ftc.teamcode.code;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
@@ -30,6 +30,7 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
     public static double BorderIndent = 40, MinArea = 1500, MaxArea = 7000;
 
     public Pose2d SamplePose = null;
+    public double LargestSampleArea = 0;
 
     @Override
     public Mat processFrame(Mat Input) {
@@ -80,6 +81,7 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
         if (LargestRect != null) {
             SamplePose = new Pose2d(LargestRect.center.x, LargestRect.center.y,
                     Math.toRadians(-LargestRect.angle + (LargestRect.size.width > LargestRect.size.height ? 180 : 90)));
+            LargestSampleArea = LargestRect.size.area();
 
             Imgproc.arrowedLine(Input, new Point(SamplePose.getX(), SamplePose.getY()),
                     new Point(SamplePose.getX() + (30 * Math.cos(SamplePose.getHeading())),
