@@ -27,10 +27,9 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
     public static Scalar LowerRed1 = new Scalar(0, 100, 100), UpperRed1 = new Scalar(10, 255, 255),
             LowerRed2 = new Scalar(160, 100, 100), UpperRed2 = new Scalar(180, 255, 255),
             LowerBlue = new Scalar(100, 75, 75), UpperBlue = new Scalar(140, 255, 255);
-    public static double BorderIndent = 40, MinArea = 1500, MaxArea = 7000;
+    public static double BorderIndent = 40, MinArea = 2000, MaxArea = 9000;
 
     public Pose2d SamplePose = null;
-    public double LargestSampleArea = 0;
 
     @Override
     public Mat processFrame(Mat Input) {
@@ -79,9 +78,8 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
         Imgproc.rectangle(Input, new Point(BorderIndent, BorderIndent),
                 new Point(320 - BorderIndent, 240 - BorderIndent), new Scalar(255, 0, 0), 1);
         if (LargestRect != null) {
-            SamplePose = new Pose2d(LargestRect.center.x, LargestRect.center.y,
+            SamplePose = new Pose2d(LargestRect.center.x, 240 - LargestRect.center.y,
                     Math.toRadians(-LargestRect.angle + (LargestRect.size.width > LargestRect.size.height ? 180 : 90)));
-            LargestSampleArea = LargestRect.size.area();
 
             Imgproc.arrowedLine(Input, new Point(SamplePose.getX(), SamplePose.getY()),
                     new Point(SamplePose.getX() + (30 * Math.cos(SamplePose.getHeading())),

@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @Config
 @TeleOp
 public class Joystick extends LinearOpMode {
-    public static double ExtenderCorrectionZone = 150, ExtenderCorrectionKp = 1.28;
+    public static double ExtenderCorrectionZone = 150, ExtenderCorrectionKp = 1.24, ExtenderMaxPos = 550;
 
     Materials M = new Materials();
     LowerThread LT = new LowerThread();
@@ -69,7 +69,8 @@ public class Joystick extends LinearOpMode {
 
             if (gamepad1.x && !XPressed && !UT.isAlive() && UpperChainState == 0) {
                 if (LT.isAlive()) {
-                    if (LT.Action.equals("ToActivatedState") || LT.Action.equals("ToDeactivatedState") || LT.Action.equals("PushIn")) {
+                    if (LT.Action.equals("ToActivatedState") || LT.Action.equals("ToDeactivatedState") ||
+                            (LT.Action.equals("PushIn") && LowerChainState < 2)) {
                         XPressed = true;
                         UT.SetAction("WallIntake");
                         UT.start();
@@ -77,6 +78,8 @@ public class Joystick extends LinearOpMode {
                 } else {
                     XPressed = true;
                     if (LowerChainState == 2) {
+                        UT.SetAction("UpForThrow");
+                        UT.start();
                         LT.SetAction("PrepareThrow");
                         LT.start();
                     } else {
@@ -153,9 +156,9 @@ public class Joystick extends LinearOpMode {
                         }
                         ExtenderActive = true;
                         SwingState = -1;
-                        M.Wait(100);
-                        M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
                         M.Wait(150);
+                        M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
+                        M.Wait(50);
                         PawState = -1;
                     }
                     LowerChainState = 1;
@@ -171,8 +174,8 @@ public class Joystick extends LinearOpMode {
                         if (LowerChainState == 2) {
                             M.LowerClaw.setPosition(Materials.LowerClawMidPos);
                             M.Wait(100);
-                            SwingState = 0;
                             M.NeedToResetExtender = true;
+                            SwingState = 0;
                         } else {
                             M.NeedToResetExtender = true;
                             SwingState = 0;
@@ -200,14 +203,12 @@ public class Joystick extends LinearOpMode {
                     break;
                 case "PrepareThrow":
                     ExtenderActive = false;
-                    M.SetTargetLiftPos(Materials.LiftThrowPos);
                     SwingState = 0;
                     M.NeedToResetExtender = true;
-                    M.Wait(350);
+                    M.Wait(200);
                     PawState = 1;
                     M.Wait(200);
-                    M.NeedToResetLift = true;
-                    while ((M.ExtenderPos() > 30 || M.NeedToResetLift) && !isStopRequested()) {
+                    while (M.ExtenderPos() > 30 && !isStopRequested()) {
                         Joystick.this.sleep(10);
                     }
                     LowerChainState = 3;
@@ -219,33 +220,30 @@ public class Joystick extends LinearOpMode {
                     M.Elbow.setPosition(Materials.ElbowTransferPreparePos);
                     M.Wrist.setPosition(Materials.WristTransferPos);
                     SwingState = 1;
-                    M.Wait(100);
                     while (M.ExtenderPos() > 30 && !isStopRequested()) {
                         Joystick.this.sleep(10);
                     }
                     M.LowerClaw.setPosition(Materials.LowerClawHardPos);
-                    M.Wait(50);
                     PawState = 2;
                     M.Wait(300);
                     M.Elbow.setPosition(Materials.ElbowTransferPos);
-                    M.Wait(150);
+                    M.Wait(100);
 
                     M.UpperClaw.setPosition(Materials.UpperClawClosedPos);
                     M.Wait(100);
                     M.LowerClaw.setPosition(Materials.LowerClawMidPos);
                     M.Wait(100);
 
-                    M.SetTargetLiftPos(Materials.LiftBasketPos);
-                    M.Wait(150);
+                    M.SetTargetLiftState(3);
+                    M.Wait(100);
                     ExtenderActive = true;
                     SwingState = -1;
                     PawState = -1;
+                    M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
+                    LowerChainState = 1;
                     M.Elbow.setPosition(Materials.ElbowBasketPos);
                     M.Wrist.setPosition(Materials.WristStraightPos);
                     UpperChainState = 2;
-                    M.Wait(100);
-                    M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
-                    LowerChainState = 1;
                     break;
             }
         }
@@ -260,6 +258,12 @@ public class Joystick extends LinearOpMode {
 
         public void run() {
             switch (Action) {
+                case "UpForThrow":
+                    M.SetTargetLiftState(1);
+                    M.Wait(400);
+                    M.NeedToResetLift = true;
+                    while (M.NeedToResetLift && !isStopRequested()) ;
+                    break;
                 case "BasketOuttake":
                     M.UpperClaw.setPosition(Materials.UpperClawOpenedPos);
                     UpperChainState = 3;
@@ -269,18 +273,18 @@ public class Joystick extends LinearOpMode {
                         M.UpperClaw.setPosition(Materials.UpperClawOpenedPos);
                         M.Wait(100);
                         M.MiniExtender.setPosition(Materials.MiniExtenderWallPos);
-                        M.Wait(100);
-                        M.SetTargetLiftPos(Materials.LiftThrowPos);
+                        M.Wait(150);
+                        M.SetTargetLiftState(1);
                         TurretAligning = false;
                     } else {
                         M.MiniExtender.setPosition(Materials.MiniExtenderWallPos);
                         M.Wait(100);
-                        M.SetTargetLiftPos(Materials.LiftThrowPos);
+                        M.SetTargetLiftState(1);
                         M.Wait(200);
                     }
                     M.Elbow.setPosition(Materials.ElbowWallPreparePos);
                     M.Wrist.setPosition(Materials.WristWallPos);
-                    while (M.LiftPosError() < -Materials.LiftWaitAccuracy && !isStopRequested()) {
+                    while (M.LiftPosError() < -10 && !isStopRequested()) {
                         Joystick.this.sleep(10);
                     }
                     M.NeedToResetLift = true;
@@ -289,11 +293,11 @@ public class Joystick extends LinearOpMode {
                     break;
                 case "WallIntake":
                     M.Elbow.setPosition(Materials.ElbowWallPos);
-                    M.Wait(50);
+                    M.Wait(100);
                     M.UpperClaw.setPosition(Materials.UpperClawClosedPos);
+                    M.Wait(150);
+                    M.SetTargetLiftState(2);
                     M.Wait(200);
-                    M.SetTargetLiftPos(Materials.LiftClippingPos);
-                    M.Wait(300);
                     M.Elbow.setPosition(Materials.ElbowClippingPos);
                     M.Wrist.setPosition(Materials.WristClippingPos);
                     M.Wait(200);
@@ -314,19 +318,30 @@ public class Joystick extends LinearOpMode {
             M.UpperClaw.setPosition(Materials.UpperClawOpenedPos);
 
             double PawHeading = Math.toRadians(90), PawCurrentAngle = 0;
+            boolean ExtenderBorder = false;
+            M.ExtenderResetTimer.reset();
+            M.LiftResetTimer.reset();
             while (!isStopRequested()) {
                 double LeftTrigger = gamepad1.left_trigger;
-                if (M.NeedToResetExtender) M.Extender.setPower(M.ExtenderResetPower());
-                else if (ExtenderActive && LeftTrigger > 0 && !M.ExtenderBorder) {
-                    if (M.ExtenderPos() >= 550) {
+                if (M.NeedToResetExtender) M.Extender.setPower(Materials.ExtenderResetPower);
+                else if (ExtenderActive && LeftTrigger > 0 && !ExtenderBorder) {
+                    if (M.ExtenderPos() >= ExtenderMaxPos) {
                         M.Extender.setPower(M.ExtenderToPosPower());
-                        M.ExtenderBorder = true;
+                        ExtenderBorder = true;
                     } else {
-                        M.Extender.setPower(LeftTrigger * (M.ExtenderPos() > 450 ? -Materials.ExtenderSlowResetPower : 1));
+                        M.Extender.setPower(LeftTrigger);
                         M.TargetExtenderPos = M.ExtenderPos();
                     }
                 } else M.Extender.setPower(M.ExtenderToPosPower());
-                M.ExtenderResetIf();
+                if (M.NeedToResetExtender && M.ExtenderDownEnd.isPressed()) {
+                    if (M.ExtenderResetTimer.milliseconds() > 200) {
+                        M.ExtenderDownPos = M.Extender.getCurrentPosition();
+                        M.TargetExtenderPos = 0;
+                        ExtenderBorder = false;
+                        M.ExtenderResetTimer.reset();
+                        M.NeedToResetExtender = false;
+                    }
+                } else M.ExtenderResetTimer.reset();
 
                 M.LiftUpdate();
 
