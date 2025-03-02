@@ -8,210 +8,180 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Config
 @Autonomous
-public class Right extends LinearOpMode {
+public class RightFastAndFurious extends LinearOpMode {
     public static double TranslationalKp = 0.12, TranslationalKd = 0.6, TurnKp = 0.02, TurnKd = 0.06,
             AccelKp = 1.6, WallPushingPower = 0.4,
 
-    FirstClipY = 35, FirstSampleX = 57, FirstSampleY = 10, ExtenderFirstPos = 520,
-            SecondSampleX = 67, ThirdSampleY = 16, ThirdSampleAngle = 65, ExtenderThirdPos = 430, PawThirdAngle = 34,
-            SecondClipX = 1, WallIntakeX = 54;
+    FirstClipY = 34, FirstSampleX = 58, FirstTwoSamplesY = 10, ExtenderFirstTwoSamplesPos = 520,
+            SamplesFastThrowExtenderPos = 200, SecondSampleX = 67,
+            ThirdSampleY = 16, ThirdSampleAngle = 65, ExtenderThirdSamplePos = 450, PawThirdSampleAngle = 34,
+            ClipXStep = 2, ClipPrepareY = 25, ClipY = 36, WallIntakeX = 54, WallIntakePrepareY = 2;
 
     public static int FirstCLipMilliseconds = 1200;
 
     ElapsedTime AccelTimer = new ElapsedTime();
     double TargetX = 0, TargetY = 0, TargetAngle = 90;
-    boolean Red = true, WallPushing = false;
+    boolean WallPushing = false;
 
     Materials M = new Materials();
-    LowerChainThread LCT = new LowerChainThread();
-    UpperChainThread UCT = new UpperChainThread();
+    LowerBackgroundThread LBT = new LowerBackgroundThread();
+    UpperBackgroundThread UBT = new UpperBackgroundThread();
 
     @Override
     public void runOpMode() throws InterruptedException {
         M.Init(hardwareMap, false);
         new BackgroundThread().start();
 
-        boolean APressed = false;
-        while ((M.NeedToResetExtender || M.NeedToResetLift || !isStarted()) && !isStopRequested()) {
-            if (gamepad1.a && !APressed) {
-                APressed = true;
-                Red = !Red;
-            }
-            if (!gamepad1.a) APressed = false;
-        }
+        while ((M.NeedToResetExtender || M.NeedToResetLift || !isStarted()) && !isStopRequested()) ;
         new DrivingThread().start();
-        LCT.SetAction("InitOpenCV");
-        LCT.start();
 
-        // To first clip
         AccelTimer.reset();
         TargetY = FirstClipY;
         M.SetTargetLiftState(2);
         M.MiniExtender.setPosition(Materials.MiniExtenderClippingPos);
         M.Wait(FirstCLipMilliseconds);
 
-        // First clip
         M.UpperClaw.setPosition(Materials.UpperClawOpenedPos);
         M.Wait(100);
-        UCT.SetAction("ReturnFirst");
-        UCT.start();
+        UBT.SetAction("ReturnFirst");
+        UBT.start();
 
-        // To first sample
         AccelTimer.reset();
-        TargetY = FirstSampleY;
+        TargetY = FirstTwoSamplesY;
         M.Wait(200);
         TargetX = FirstSampleX;
-        while ((M.Drive.getPoseEstimate().getX() < 30 ||
-                LCT.isAlive()) && !isStopRequested()) ;
-        LCT.ExtenderPos = ExtenderFirstPos;
-        LCT.SetAction("Prepare");
-        LCT.start();
-        while (new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
-                TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 && !isStopRequested()) {
-            Right.this.sleep(10);
+        while (M.Drive.getPoseEstimate().getX() < 30 && !isStopRequested()) ;
+        M.TargetExtenderPos = ExtenderFirstTwoSamplesPos;
+        M.Swing.setPosition(Materials.SwingPreparePos);
+        M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
+        while ((new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
+                TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 ||
+                M.ExtenderPosError() > 20) && !isStopRequested()) {
+            RightFastAndFurious.this.sleep(10);
         }
-        M.Wait(300);
-        while (LCT.isAlive() && !isStopRequested()) ;
+        M.Wait(200);
 
-        // Throw and to second
-        LCT.SetAction("FastThrow");
-        LCT.start();
-        M.Wait(300);
+        M.Swing.setPosition(Materials.SwingBottomPos);
+        M.Wait(50);
+        M.LowerClaw.setPosition(Materials.LowerClawSoftPos);
+        M.Wait(150);
+        M.Swing.setPosition(Materials.SwingInsidePos);
+        M.Wait(50);
+        M.SetPaw(Materials.PawThrowPos, 0);
+        M.NeedToResetExtender = true;
+
         AccelTimer.reset();
         TargetX = SecondSampleX;
-        while (LCT.isAlive() && !isStopRequested()) ;
+        while (M.ExtenderPos() > SamplesFastThrowExtenderPos && !isStopRequested()) ;
+        M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
+        M.Wait(150);
+        while (M.NeedToResetExtender && !isStopRequested()) ;
+        M.TargetExtenderPos = ExtenderFirstTwoSamplesPos;
+        M.Swing.setPosition(Materials.SwingPreparePos);
+        M.SetPaw(Materials.PawFoldPos, 0);
+        while ((new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
+                TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 ||
+                M.ExtenderPosError() > 20) && !isStopRequested()) {
+            RightFastAndFurious.this.sleep(10);
+        }
+        M.Wait(200);
 
-        // Throw second
-        LCT.SetAction("Prepare");
-        LCT.start();
-        while (LCT.isAlive() && !isStopRequested()) ;
-        LCT.SetAction("FastThrow");
-        LCT.start();
-        while (LCT.isAlive() && !isStopRequested()) ;
+        M.Swing.setPosition(Materials.SwingBottomPos);
+        M.Wait(50);
+        M.LowerClaw.setPosition(Materials.LowerClawSoftPos);
+        M.Wait(150);
+        M.Swing.setPosition(Materials.SwingInsidePos);
+        M.Wait(50);
+        M.SetPaw(Materials.PawThrowPos, 0);
+        M.NeedToResetExtender = true;
+        while (M.ExtenderPos() > SamplesFastThrowExtenderPos && !isStopRequested()) ;
+        M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
+        M.Wait(150);
 
         AccelTimer.reset();
         TargetY = ThirdSampleY;
         TargetAngle = ThirdSampleAngle;
-        M.Wait(600);
+        M.Swing.setPosition(Materials.SwingPreparePos);
+        M.SetPaw(Materials.PawFoldPos, PawThirdSampleAngle);
+        while (M.NeedToResetExtender && !isStopRequested()) ;
+        M.TargetExtenderPos = ExtenderThirdSamplePos;
+        while ((new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
+                TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 ||
+                M.ExtenderPosError() > 20) && !isStopRequested()) {
+            RightFastAndFurious.this.sleep(10);
+        }
+        while (UBT.isAlive() && !isStopRequested()) ;
+        UBT.SetAction("Reset");
+        UBT.start();
+        M.Wait(200);
 
-        LCT.ExtenderPos = ExtenderThirdPos;
-        LCT.PawAngle = PawThirdAngle;
-        LCT.SetAction("Prepare");
-        LCT.start();
-        while (LCT.isAlive() && !isStopRequested()) ;
-
-        LCT.SetAction("PrepareThrow");
-        LCT.start();
-        M.Wait(300);
+        M.Swing.setPosition(Materials.SwingBottomPos);
+        M.Wait(50);
+        M.LowerClaw.setPosition(Materials.LowerClawSoftPos);
+        M.Wait(150);
+        M.Swing.setPosition(Materials.SwingInsidePos);
+        M.Wait(50);
         AccelTimer.reset();
         TargetY = 0;
         TargetAngle = 90;
-        M.Wait(400);
-        UCT.SetAction("Reset");
-        UCT.start();
+        M.SetPaw(Materials.PawThrowPos, 0);
+        M.Wait(300);
+        M.NeedToResetExtender = true;
+        while (M.NeedToResetExtender && !isStopRequested()) ;
+
         for (int i = 1; i <= 4; i++) {
             WallPushing = true;
             M.Wait(300);
-            while ((LCT.isAlive() || UCT.isAlive()) && !isStopRequested()) ;
-            LCT.SetAction("Throw");
-            LCT.start();
-            UCT.SetAction("WallIntake");
-            UCT.start();
-            M.Wait(300);
+            while (UBT.isAlive() && !isStopRequested()) ;
+            if (i == 1) LBT.start();
+            M.Elbow.setPosition(Materials.ElbowWallPos);
+            M.Wait(100);
+            M.UpperClaw.setPosition(Materials.UpperClawClosedPos);
+            M.Wait(150);
+            M.SetTargetLiftState(2);
+            M.Wait(200);
             M.Drive.setPoseEstimate(new Pose2d(M.Drive.getPoseEstimate().getX(), 0, M.Drive.getPoseEstimate().getHeading()));
+            AccelTimer.reset();
+            TargetX = ClipXStep * i;
+            TargetY = ClipPrepareY;
             WallPushing = false;
 
-            AccelTimer.reset();
-            TargetX = SecondClipX * i;
-            TargetY = FirstClipY;
+            UBT.SetAction("PrepareClip");
+            UBT.start();
             while (new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
-                    TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 10 && !isStopRequested()) {
-                Right.this.sleep(10);
+                    TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 20 && !isStopRequested()) {
+                RightFastAndFurious.this.sleep(10);
             }
+            TargetY = ClipY;
             M.Wait(500);
+            while (UBT.isAlive() && !isStopRequested()) ;
 
             M.UpperClaw.setPosition(Materials.UpperClawOpenedPos);
             M.Wait(100);
-            UCT.SetAction("Return");
-            UCT.start();
+            UBT.SetAction("Return");
+            UBT.start();
             AccelTimer.reset();
             TargetX = WallIntakeX;
-            TargetY = 3;
+            TargetY = WallIntakePrepareY;
             while (new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
                     TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 && !isStopRequested()) {
-                Right.this.sleep(10);
+                RightFastAndFurious.this.sleep(10);
             }
-            while (LCT.isAlive() && !isStopRequested()) ;
         }
 
         Materials.AngleStorage = Math.toDegrees(M.Drive.getPoseEstimate().getHeading());
     }
 
-    class LowerChainThread extends Thread {
-        private String Action;
-        private double ExtenderPos = 0, PawAngle = 0;
-
-        public void SetAction(String Action) {
-            this.Action = Action;
-        }
-
+    class LowerBackgroundThread extends Thread {
         public void run() {
-            switch (Action) {
-                case "Prepare":
-                    M.TargetExtenderPos = ExtenderPos;
-                    M.Swing.setPosition(Materials.SwingPreparePos);
-                    M.Wait(150);
-                    M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
-                    M.Wait(50);
-                    M.SetPaw(Materials.PawFoldPos, PawAngle);
-                    while (M.ExtenderPosError() > 20 && !isStopRequested()) {
-                        Right.this.sleep(10);
-                    }
-                    M.Wait(200);
-                    break;
-                case "FastThrow":
-                    M.Swing.setPosition(Materials.SwingBottomPos);
-                    M.Wait(50);
-                    M.LowerClaw.setPosition(Materials.LowerClawSoftPos);
-                    M.Wait(150);
-                    M.Swing.setPosition(Materials.SwingInsidePos);
-                    M.Wait(400);
-                    M.SetPaw(Materials.PawThrowPos, 0);
-                    M.NeedToResetExtender = true;
-                    while (M.ExtenderPos() > 60 && !isStopRequested()) {
-                        Right.this.sleep(10);
-                    }
-                    M.LowerClaw.setPosition(Materials.LowerClawMidPos);
-                    M.Wait(150);
-                    M.SetPaw(Materials.PawFoldPos, 0);
-                    M.Wait(100);
-                    while (M.NeedToResetExtender && !isStopRequested()) ;
-                    break;
-                case "PrepareThrow":
-                    M.Swing.setPosition(Materials.SwingBottomPos);
-                    M.Wait(50);
-                    M.LowerClaw.setPosition(Materials.LowerClawSoftPos);
-                    M.Wait(150);
-                    M.Swing.setPosition(Materials.SwingInsidePos);
-                    M.Wait(400);
-                    M.SetPaw(Materials.PawThrowPos, 0);
-                    M.NeedToResetExtender = true;
-                    while (M.NeedToResetExtender && !isStopRequested()) ;
-                    break;
-                case "Throw":
-                    M.LowerClaw.setPosition(Materials.LowerClawMidPos);
-                    M.Wait(150);
-                    M.SetPaw(Materials.PawFoldPos, 0);
-                    M.Wait(100);
-                    break;
-                case "InitOpenCV":
-                    M.InitOpenCV(hardwareMap, Red);
-                    break;
-            }
+            M.LowerClaw.setPosition(Materials.LowerClawMidPos);
+            M.Wait(150);
+            M.SetPaw(Materials.PawFoldPos, 0);
+            M.Wait(100);
         }
     }
 
-    class UpperChainThread extends Thread {
+    class UpperBackgroundThread extends Thread {
         private String Action;
 
         public void SetAction(String Action) {
@@ -227,20 +197,14 @@ public class Right extends LinearOpMode {
                     M.Elbow.setPosition(Materials.ElbowWallPreparePos);
                     M.Wrist.setPosition(Materials.WristWallPos);
                     while (M.LiftPosError() < -10 && !isStopRequested()) {
-                        Right.this.sleep(10);
+                        RightFastAndFurious.this.sleep(10);
                     }
                     break;
                 case "Reset":
                     M.NeedToResetLift = true;
                     while (M.NeedToResetLift && !isStopRequested()) ;
                     break;
-                case "WallIntake":
-                    M.Elbow.setPosition(Materials.ElbowWallPos);
-                    M.Wait(100);
-                    M.UpperClaw.setPosition(Materials.UpperClawClosedPos);
-                    M.Wait(150);
-                    M.SetTargetLiftState(2);
-                    M.Wait(200);
+                case "PrepareClip":
                     M.Elbow.setPosition(Materials.ElbowClippingPos);
                     M.Wrist.setPosition(Materials.WristClippingPos);
                     M.Wait(200);
@@ -253,7 +217,7 @@ public class Right extends LinearOpMode {
                     M.Elbow.setPosition(Materials.ElbowWallPreparePos);
                     M.Wrist.setPosition(Materials.WristWallPos);
                     while (M.LiftPosError() < -10 && !isStopRequested()) {
-                        Right.this.sleep(10);
+                        RightFastAndFurious.this.sleep(10);
                     }
                     M.NeedToResetLift = true;
                     while (M.NeedToResetLift && !isStopRequested()) ;
@@ -314,8 +278,6 @@ public class Right extends LinearOpMode {
 
                 M.LiftUpdate();
 
-                telemetry.addLine(Red ? "Red" : "Blue");
-                telemetry.addData("Extender", M.ExtenderPos());
                 telemetry.addData("NeedToResetExtender", M.NeedToResetExtender);
                 telemetry.addData("NeedToResetLift", M.NeedToResetLift);
                 telemetry.update();

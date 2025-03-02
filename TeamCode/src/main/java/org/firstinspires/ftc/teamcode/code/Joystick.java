@@ -302,7 +302,7 @@ public class Joystick extends LinearOpMode {
                     M.Wrist.setPosition(Materials.WristClippingPos);
                     M.Wait(200);
                     M.MiniExtender.setPosition(Materials.MiniExtenderClippingPos);
-                    TurretAligning = true;
+                    TurretAligning = false;
                     UpperChainState = 1;
                     break;
             }

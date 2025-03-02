@@ -24,14 +24,14 @@ public class Materials {
 
     LiftMinKp = 0.006, LiftMaxKp = 0.05, LiftPushingStartSeconds = 0.6, LiftPushingAccel = 0.06, LiftKd = 0.014,
             LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 200, LiftResetUpPower = 0.1, LiftResetMilliseconds = 1000,
-            LiftThrowPos = 200, LiftClippingPos = 620, LiftBasketPos = 1200,
+            LiftThrowPos = 240, LiftClippingPos = 620, LiftBasketPos = 1200,
 
     SwingInsidePos = 0.04, SwingTransferPos = 0.27, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
-            PawFoldPos = 0, PawThrowPos = 0.12, PawTransferPos = 0.32, PawStartRotation = 0.51, PawAngleMultiply = 0.0017,
+            PawFoldPos = 0.02, PawThrowPos = 0.12, PawTransferPos = 0.32, PawStartRotation = 0.51, PawAngleMultiply = 0.0017,
             LowerClawHardPos = 0.798, LowerClawSoftPos = 0.774, LowerClawMidPos = 0.72, LowerClawOpenedPos = 0.6,
 
     MiniExtenderTransferPos = 0.414, MiniExtenderWallPos = 0.48, MiniExtenderClippingPos = 0.68,
-            TurretStartPos = 0.195, TurretAngleMultiply = 0.0037,
+            TurretStartPos = 0.192, TurretAngleMultiply = 0.0037,
             ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.68, ElbowClippingPos = 0.74,
             ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.22,
             WristTransferPos = 0.7, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.34,
