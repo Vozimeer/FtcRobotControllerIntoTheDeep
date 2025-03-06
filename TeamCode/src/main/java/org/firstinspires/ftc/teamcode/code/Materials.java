@@ -20,35 +20,35 @@ import org.openftc.easyopencv.OpenCvWebcam;
 @Config
 public class Materials {
     // 192.168.43.1:8080/dash
-    public static double AngleStorage = 90, ExtenderKp = 0.012, ExtenderResetPower = -0.8,
+    public static double AngleStorage = 90,
+            ExtenderKp = 0.012, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 200, ExtenderMaxPos = 550,
 
-    LiftMinKp = 0.006, LiftMaxKp = 0.05, LiftPushingStartSeconds = 0.6, LiftPushingAccel = 0.06, LiftKd = 0.014,
-            LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 200, LiftResetUpPower = 0.1, LiftResetMilliseconds = 1000,
-            LiftThrowPos = 240, LiftClippingPos = 620, LiftBasketPos = 1200,
+    LiftMinKp = 0.006, LiftMaxKp = 0.05, LiftPushingStartSeconds = 0.6, LiftPushingAccel = 0.06,
+            LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 200, LiftResetUpPower = 0.078, LiftResetMilliseconds = 1000,
+            LiftThrowPos = 240, LiftClippingPos = 615, LiftBasketPos = 1200,
 
-    SwingInsidePos = 0.04, SwingTransferPos = 0.27, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
-            PawFoldPos = 0.02, PawThrowPos = 0.12, PawTransferPos = 0.32, PawStartRotation = 0.51, PawAngleMultiply = 0.0017,
-            LowerClawHardPos = 0.798, LowerClawSoftPos = 0.774, LowerClawMidPos = 0.72, LowerClawOpenedPos = 0.6,
+    SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
+            PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.17, PawTransferPos = 0.36, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,
+            LowerClawHardPos = 0.81, LowerClawSoftPos = 0.77, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
 
     MiniExtenderTransferPos = 0.414, MiniExtenderWallPos = 0.48, MiniExtenderClippingPos = 0.68,
-            TurretStartPos = 0.192, TurretAngleMultiply = 0.0037,
-            ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.68, ElbowClippingPos = 0.74,
-            ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.22,
-            WristTransferPos = 0.7, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.34,
-            UpperClawOpenedPos = 0.82, UpperClawClosedPos = 0.96;
+            ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.58, ElbowClippingPos = 0.7,
+            ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.21,
+            WristTransferPos = 0.71, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.34,
+            UpperClawOpenedPos = 0.79, UpperClawClosedPos = 0.96;
 
     public SampleDetectionPipeline SDP;
     public ElapsedTime ExtenderResetTimer = new ElapsedTime(),
             LiftResetTimer = new ElapsedTime(), LiftPushingTimer = new ElapsedTime();
 
-    public double ExtenderDownPos = 0, TargetExtenderPos = 0, LiftDownPos = 0, LastLiftPosError = 0;
+    public double ExtenderDownPos = 0, TargetExtenderPos = 0, LiftDownPos = 0;
     public boolean StopRequested = false, NeedToResetExtender = true, NeedToResetLift = true;
     public int TargetLiftState = 0;
 
     public SampleMecanumDrive Drive;
     public DcMotorEx Extender, LeftLift, RightLift;
     public Servo Swing, LeftPawGear, RightPawGear, LowerClaw,
-            MiniExtender, Turret, Elbow, Wrist, UpperClaw;
+            MiniExtender, Elbow, Wrist, UpperClaw;
     public RevTouchSensor ExtenderDownEnd;
     public DigitalChannel LeftLiftDownEnd, RightLiftDownEnd;
     public OpenCvWebcam Webcam;
@@ -78,7 +78,6 @@ public class Materials {
         LowerClaw = hardwareMap.get(Servo.class, "LowerClaw");
 
         MiniExtender = hardwareMap.get(Servo.class, "MiniExtender");
-        Turret = hardwareMap.get(Servo.class, "Turret");
         Elbow = hardwareMap.get(Servo.class, "Elbow");
         Wrist = hardwareMap.get(Servo.class, "Wrist");
         UpperClaw = hardwareMap.get(Servo.class, "UpperClaw");
@@ -142,13 +141,10 @@ public class Materials {
         double LiftResetTimerMilliseconds = LiftResetTimer.milliseconds(), LocalLiftPosError = LiftPosError();
         boolean ResettingUp = LiftResetTimerMilliseconds >= LiftResetDownMilliseconds;
         SetLiftPower(NeedToResetLift ? ResettingUp ? LiftResetUpPower : LiftResetDownPower : Math.max(0, LocalLiftPosError *
-                Math.min(LiftMaxKp, LiftMinKp + (Math.max(0, LiftPushingTimer.seconds() - LiftPushingStartSeconds) * LiftPushingAccel)) +
-                (LocalLiftPosError - LastLiftPosError) * LiftKd));
-        LastLiftPosError = LocalLiftPosError;
+                Math.min(LiftMaxKp, LiftMinKp + (Math.max(0, LiftPushingTimer.seconds() - LiftPushingStartSeconds) * LiftPushingAccel))));
         if ((NeedToResetLift && (!LeftLiftDownEnd.getState() || !RightLiftDownEnd.getState())) || ResettingUp) {
             if (LiftResetTimerMilliseconds >= LiftResetMilliseconds) {
                 LiftDownPos = LeftLift.getCurrentPosition();
-                LastLiftPosError = 0;
                 SetTargetLiftState(0);
                 LiftResetTimer.reset();
                 NeedToResetLift = false;
@@ -160,8 +156,8 @@ public class Materials {
     public void SetPaw(double Pos, double Angle) {
         double PawRotation = PawStartRotation + Limit(Angle, 90) * PawAngleMultiply;
 
-        LeftPawGear.setPosition(-Pos + PawRotation);
-        RightPawGear.setPosition(Pos + PawRotation);
+        LeftPawGear.setPosition(-PawStartPos - Pos + PawRotation);
+        RightPawGear.setPosition(PawStartPos + Pos + PawRotation);
     }
 
 

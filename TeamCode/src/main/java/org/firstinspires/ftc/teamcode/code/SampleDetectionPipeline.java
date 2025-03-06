@@ -27,12 +27,10 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
     public static Scalar LowerRed1 = new Scalar(0, 100, 100), UpperRed1 = new Scalar(10, 255, 255),
             LowerRed2 = new Scalar(160, 100, 100), UpperRed2 = new Scalar(180, 255, 255),
             LowerBlue = new Scalar(100, 75, 75), UpperBlue = new Scalar(140, 255, 255);
-    public static double BorderIndent = 40, MinArea = 2000, MaxArea = 9000,
-                        ZoneY = 240 - 2*BorderIndent;
-
+    public static double LeftBorder = 40, RightBorder = 40, UpBorder = 40, BottomBorder = 40,
+            MinArea = 4000, MaxArea = 13000;
 
     public Pose2d SamplePose = null;
-    public int SampleZone = 0;
 
     @Override
     public Mat processFrame(Mat Input) {
@@ -69,8 +67,8 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
             Contour2f.release();
 
             if (DetectedRect.size.area() > MinArea && DetectedRect.size.area() < MaxArea &&
-                    DetectedRect.center.x > BorderIndent && DetectedRect.center.x < 320 - BorderIndent &&
-                    DetectedRect.center.y > BorderIndent && DetectedRect.center.y < 240 - BorderIndent) {
+                    DetectedRect.center.x > LeftBorder && DetectedRect.center.x < 320 - RightBorder &&
+                    DetectedRect.center.y > UpBorder && DetectedRect.center.y < 240 - BottomBorder) {
                 if (LargestRect != null) {
                     if (DetectedRect.size.area() > LargestRect.size.area())
                         LargestRect = DetectedRect;
@@ -78,21 +76,15 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
             }
         }
 
-        Imgproc.rectangle(Input, new Point(BorderIndent, BorderIndent),
-                new Point(320 - BorderIndent, 240 - BorderIndent), new Scalar(255, 0, 0), 1);
-
-        Imgproc.rectangle(Input, new Point(BorderIndent, ZoneY/3 + BorderIndent),
-                new Point(320 - BorderIndent, 240 - BorderIndent - ZoneY/3), new Scalar(255, 0, 0), 1);
+        Imgproc.rectangle(Input, new Point(LeftBorder, UpBorder),
+                new Point(320 - RightBorder, 240 - BottomBorder), new Scalar(255, 0, 0), 1);
         if (LargestRect != null) {
-            SamplePose = new Pose2d(LargestRect.center.x, 240 - LargestRect.center.y,
+            SamplePose = new Pose2d(LargestRect.center.x - LeftBorder, 240 - LargestRect.center.y - BottomBorder,
                     Math.toRadians(-LargestRect.angle + (LargestRect.size.width > LargestRect.size.height ? 180 : 90)));
-            if (BorderIndent <= SamplePose.getY() && SamplePose.getY() < ZoneY/3 + BorderIndent) SampleZone = 1;
-            else if (240 - BorderIndent - ZoneY/3 < SamplePose.getY() && SamplePose.getY() < 240 - BorderIndent) SampleZone = 3;
-            else SampleZone = 2;
 
-            Imgproc.arrowedLine(Input, new Point(SamplePose.getX(), 240 - SamplePose.getY()),
-                    new Point(SamplePose.getX() + (30 * Math.cos(SamplePose.getHeading())),
-                            240 - SamplePose.getY() + (30 * -Math.sin(SamplePose.getHeading()))),
+            Imgproc.arrowedLine(Input, new Point(LargestRect.center.x, LargestRect.center.y),
+                    new Point(LargestRect.center.x + (30 * Math.cos(SamplePose.getHeading())),
+                            LargestRect.center.y + (30 * -Math.sin(SamplePose.getHeading()))),
                     new Scalar(0, 255, 0), 2);
         } else SamplePose = null;
 
