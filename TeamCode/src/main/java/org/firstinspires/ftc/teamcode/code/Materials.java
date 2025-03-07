@@ -29,7 +29,7 @@ public class Materials {
 
     SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
             PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.17, PawTransferPos = 0.36, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,
-            LowerClawHardPos = 0.81, LowerClawSoftPos = 0.77, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
+            LowerClawHardPos = 0.81, LowerClawSoftPos = 0.7694, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
 
     MiniExtenderTransferPos = 0.414, MiniExtenderWallPos = 0.48, MiniExtenderClippingPos = 0.68,
             ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.58, ElbowClippingPos = 0.7,

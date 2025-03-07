@@ -193,10 +193,8 @@ public class Joystick extends LinearOpMode {
                     M.NeedToResetExtender = true;
                     M.Wait(200);
                     PawState = 1;
-                    M.Wait(200);
-                    while (M.ExtenderPos() > 50 && !isStopRequested()) {
-                        Joystick.this.sleep(10);
-                    }
+                    M.Wait(100);
+                    while (M.NeedToResetExtender && !isStopRequested()) ;
                     LowerChainState = 3;
                     break;
                 case "Transfer":
@@ -246,7 +244,7 @@ public class Joystick extends LinearOpMode {
             switch (Action) {
                 case "UpForThrow":
                     M.SetTargetLiftState(1);
-                    M.Wait(400);
+                    M.Wait(300);
                     M.NeedToResetLift = true;
                     while (M.NeedToResetLift && !isStopRequested()) ;
                     break;
