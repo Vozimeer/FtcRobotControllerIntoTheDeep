@@ -21,11 +21,11 @@ import org.openftc.easyopencv.OpenCvWebcam;
 public class Materials {
     // 192.168.43.1:8080/dash
     public static double AngleStorage = 90,
-            ExtenderKp = 0.012, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 200, ExtenderMaxPos = 550,
+            ExtenderKp = 0.0128, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 200, ExtenderMaxPos = 600,
 
     LiftMinKp = 0.006, LiftMaxKp = 0.05, LiftPushingStartSeconds = 0.6, LiftPushingAccel = 0.06,
             LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 200, LiftResetUpPower = 0.078, LiftResetMilliseconds = 1000,
-            LiftThrowPos = 240, LiftClippingPos = 615, LiftBasketPos = 1200,
+            LiftThrowPos = 240, LiftClippingPos = 518, LiftBasketPos = 1200,
 
     SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
             PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.17, PawTransferPos = 0.36, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,

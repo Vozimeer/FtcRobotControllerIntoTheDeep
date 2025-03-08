@@ -28,7 +28,6 @@ public class EMERGENCY extends LinearOpMode {
 
             M.Extender.setPower(-gamepad2.left_stick_y);
             M.SetLiftPower(-gamepad2.right_stick_y);
-
             M.MiniExtender.setPosition(gamepad2.left_bumper ? Materials.MiniExtenderClippingPos : Materials.MiniExtenderTransferPos);
         }
         M.Drive.setMotorPowers(0, 0, 0, 0);

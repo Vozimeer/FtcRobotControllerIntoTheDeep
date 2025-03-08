@@ -28,7 +28,7 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
             LowerRed2 = new Scalar(160, 100, 100), UpperRed2 = new Scalar(180, 255, 255),
             LowerBlue = new Scalar(100, 75, 75), UpperBlue = new Scalar(140, 255, 255);
     public static double LeftBorder = 40, RightBorder = 40, UpBorder = 40, BottomBorder = 40,
-            MinArea = 4000, MaxArea = 13000;
+            MinArea = 2000, MaxArea = 13000;
 
     public Pose2d SamplePose = null;
 
