@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-@Disabled
 @Autonomous
 public class CameraTest extends LinearOpMode {
     Materials M = new Materials();

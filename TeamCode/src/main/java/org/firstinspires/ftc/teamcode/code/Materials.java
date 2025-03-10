@@ -35,7 +35,7 @@ public class Materials {
             ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.58, ElbowClippingPos = 0.7,
             ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.21,
             WristTransferPos = 0.71, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.34,
-            UpperClawOpenedPos = 0.79, UpperClawClosedPos = 0.96;
+            UpperClawOpenedPos = 0.79, UpperClawClosedPos = 1;
 
     public SampleDetectionPipeline SDP;
     public ElapsedTime ExtenderResetTimer = new ElapsedTime(),

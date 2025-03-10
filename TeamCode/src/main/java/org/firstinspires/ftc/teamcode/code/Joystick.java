@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @TeleOp
 public class Joystick extends LinearOpMode {
     public static double ExtenderCorrectionZone = 150, ExtenderCorrectionKp = 1.2,
-            LiftHeightCorrectionSpeed = 1.6, PawPosCorrectionSpeed = 0.002;
+            LiftHeightCorrectionSpeed = 3.2, PawPosCorrectionSpeed = 0.002;
 
     Materials M = new Materials();
     LowerThread LT = new LowerThread();

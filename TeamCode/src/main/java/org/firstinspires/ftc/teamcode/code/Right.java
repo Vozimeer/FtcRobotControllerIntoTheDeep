@@ -9,12 +9,12 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @Config
 @Autonomous
 public class Right extends LinearOpMode {
-    public static double TranslationalKp = 0.14, TranslationalKd = 0.75, TurnKp = 0.02, TurnKd = 0.05,
-            SampleXC = 0, SampleXKp = 0.041, SampleYC = 215, SampleYKp = 1.4,
+    public static double TranslationalKp = 0.14, TranslationalKd = 0.8, TurnKp = 0.027, TurnKd = 0.05,
+            SampleXC = 0, SampleXKp = 0.039, SampleYC = 215, SampleYKp = 1.22,
 
-    FirstClipY = 35, FirstSampleX = 57, FirstTwoSamplesY = 11, ExtenderXTrigger = 25, ExtenderFirstTwoSamplesPos = 530,
-            ExtenderWonderThrowPos = 120, SecondSampleX = 66.4,
-            ThirdSampleY = 18, ThirdSampleAngle = 65, ExtenderThirdSamplePos = 405, PawThirdSampleAngle = 34,
+    FirstClipY = 35, FirstSampleX = 56.7, FirstTwoSamplesY = 11.8, ExtenderXTrigger = 25, ExtenderFirstTwoSamplesPos = 521,
+            ExtenderWonderThrowPos = 130, SecondSampleX = 66.2,
+            ThirdSampleY = 18.3, ThirdSampleAngle = 65, ExtenderThirdSamplePos = 399, PawThirdSampleAngle = 34,
             ClipY = 34, MiniExtenderXTrigger = 18;
 
     ElapsedTime AccelTimer = new ElapsedTime(), CalmDownTimer = new ElapsedTime();
@@ -79,7 +79,7 @@ public class Right extends LinearOpMode {
         M.Swing.setPosition(Materials.SwingPreparePos);
         M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
         CalmDownTimer.reset();
-        while (CalmDownTimer.milliseconds() < 100 && !isStopRequested()) {
+        while (CalmDownTimer.milliseconds() < 150 && !isStopRequested()) {
             if (new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
                     TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 ||
                     Math.abs(M.MinAngleError(TargetAngle - Math.toDegrees(M.Drive.getPoseEstimate().getHeading()))) > 5 ||
@@ -101,15 +101,16 @@ public class Right extends LinearOpMode {
         while (M.ExtenderPos() > ExtenderWonderThrowPos && !isStopRequested()) ;
         M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
         M.Wait(150);
-        while (M.NeedToResetExtender && !isStopRequested()) ;
-        M.TargetExtenderPos = ExtenderFirstTwoSamplesPos;
         M.Swing.setPosition(Materials.SwingPreparePos);
         M.SetPaw(Materials.PawFoldPos, 0);
-        M.Wait(150);
-        while ((new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
-                TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 ||
-                Math.abs(M.MinAngleError(TargetAngle - Math.toDegrees(M.Drive.getPoseEstimate().getHeading()))) > 5 ||
-                Math.abs(M.ExtenderPosError()) > 20) && !isStopRequested()) {
+        while (M.NeedToResetExtender && !isStopRequested()) ;
+        M.TargetExtenderPos = ExtenderFirstTwoSamplesPos;
+        CalmDownTimer.reset();
+        while (CalmDownTimer.milliseconds() < 50 && !isStopRequested()) {
+            if (new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
+                    TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 ||
+                    Math.abs(M.MinAngleError(TargetAngle - Math.toDegrees(M.Drive.getPoseEstimate().getHeading()))) > 5 ||
+                    Math.abs(M.ExtenderPosError()) > 20) CalmDownTimer.reset();
             Right.this.sleep(10);
         }
 
@@ -133,7 +134,7 @@ public class Right extends LinearOpMode {
         while (M.NeedToResetExtender && !isStopRequested()) ;
         M.TargetExtenderPos = ExtenderThirdSamplePos;
         CalmDownTimer.reset();
-        while (CalmDownTimer.milliseconds() < 100 && !isStopRequested()) {
+        while (CalmDownTimer.milliseconds() < 150 && !isStopRequested()) {
             if (new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
                     TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 ||
                     Math.abs(M.MinAngleError(TargetAngle - Math.toDegrees(M.Drive.getPoseEstimate().getHeading()))) > 5 ||
@@ -193,7 +194,7 @@ public class Right extends LinearOpMode {
                 UBT.SetAction("ReturnFirst");
                 UBT.start();
                 CalmDownTimer.reset();
-                while ((CalmDownTimer.milliseconds() < 100 || UBT.isAlive()) && !isStopRequested()) {
+                while ((CalmDownTimer.milliseconds() < 50 || UBT.isAlive()) && !isStopRequested()) {
                     if (new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
                             TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 ||
                             Math.abs(M.MinAngleError(TargetAngle - Math.toDegrees(M.Drive.getPoseEstimate().getHeading()))) > 5)
