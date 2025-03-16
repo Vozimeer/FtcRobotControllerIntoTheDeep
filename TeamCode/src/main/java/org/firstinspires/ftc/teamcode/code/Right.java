@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @Config
 @Autonomous
 public class Right extends LinearOpMode {
-    public static double TranslationalKp = 0.14, TranslationalKd = 0.8, TurnKp = 0.027, TurnKd = 0.05,
+    public static double TranslationalKp = 0.32, TranslationalKd = 2, TurnKp = 0.04, TurnKd = 0.2,
             SampleXC = 0, SampleXKp = 0.039, SampleYC = 215, SampleYKp = 1.22,
 
     FirstClipY = 35, FirstSampleX = 56.7, FirstTwoSamplesY = 11.8, ExtenderXTrigger = 25, ExtenderFirstTwoSamplesPos = 521,
@@ -17,7 +17,7 @@ public class Right extends LinearOpMode {
             ThirdSampleY = 18.3, ThirdSampleAngle = 65, ExtenderThirdSamplePos = 399, PawThirdSampleAngle = 34,
             ClipY = 34, MiniExtenderXTrigger = 18;
 
-    ElapsedTime AccelTimer = new ElapsedTime(), CalmDownTimer = new ElapsedTime();
+    ElapsedTime CalmDownTimer = new ElapsedTime();
     double TargetX = 0, TargetY = 0, TargetAngle = 90;
     boolean WallPushing = false, Red = true;
     int IntakeI = 1;
@@ -57,7 +57,6 @@ public class Right extends LinearOpMode {
             LBT.start();
         }
 
-        AccelTimer.reset();
         TargetY = FirstClipY;
         M.SetTargetLiftState(2);
         M.MiniExtender.setPosition(Materials.MiniExtenderClippingPos);
@@ -68,7 +67,6 @@ public class Right extends LinearOpMode {
         UBT.SetAction("ReturnFirst");
         UBT.start();
 
-        AccelTimer.reset();
         TargetY = FirstTwoSamplesY;
         M.Wait(200);
         TargetX = FirstSampleX;
@@ -96,7 +94,6 @@ public class Right extends LinearOpMode {
         M.SetPaw(Materials.PawThrowPos, 0);
         M.NeedToResetExtender = true;
 
-        AccelTimer.reset();
         TargetX = SecondSampleX;
         while (M.ExtenderPos() > ExtenderWonderThrowPos && !isStopRequested()) ;
         M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
@@ -126,7 +123,6 @@ public class Right extends LinearOpMode {
         M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
         M.Wait(150);
 
-        AccelTimer.reset();
         TargetY = ThirdSampleY;
         TargetAngle = ThirdSampleAngle;
         M.Swing.setPosition(Materials.SwingPreparePos);
@@ -150,7 +146,6 @@ public class Right extends LinearOpMode {
         M.Wait(150);
         M.Swing.setPosition(Materials.SwingInsidePos);
         M.Wait(50);
-        AccelTimer.reset();
         TargetY = 0;
         TargetAngle = 90;
         M.SetPaw(Materials.PawThrowPos, 0);
@@ -161,7 +156,6 @@ public class Right extends LinearOpMode {
         boolean Took = false;
         for (int i = 1; i <= (Took ? 5 : 4); i++) {
             WallPushing = true;
-            M.Wait(300);
             while ((LBT.isAlive() || UBT.isAlive()) && !isStopRequested()) ;
             if (i == 1 || Took) {
                 LBT.SetAction("Throw");
@@ -172,12 +166,11 @@ public class Right extends LinearOpMode {
             M.UpperClaw.setPosition(Materials.UpperClawClosedPos);
             M.Wait(150);
             M.SetTargetLiftState(2);
-            AccelTimer.reset();
             TargetY = ClipY;
             M.Drive.setPoseEstimate(new Pose2d(M.Drive.getPoseEstimate().getX(), 0, M.Drive.getPoseEstimate().getHeading()));
             WallPushing = false;
 
-            M.Wait(250);
+            M.Wait(150);
             TargetX = i * 2;
             M.Elbow.setPosition(Materials.ElbowClippingPos);
             M.Wrist.setPosition(Materials.WristClippingPos);
@@ -204,7 +197,6 @@ public class Right extends LinearOpMode {
                 Pose2d LocalSamplePose = M.SDP.SamplePose;
                 M.Webcam.closeCameraDevice();
                 if (LocalSamplePose != null && !LBT.isAlive()) {
-                    AccelTimer.reset();
                     TargetX = M.Drive.getPoseEstimate().getX() + SampleXC + LocalSamplePose.getX() * SampleXKp;
                     M.TargetExtenderPos = Math.min(SampleYC + LocalSamplePose.getY() * SampleYKp, Materials.ExtenderMaxPos);
                     M.Swing.setPosition(Materials.SwingPreparePos);
@@ -239,9 +231,8 @@ public class Right extends LinearOpMode {
                 UBT.start();
             }
 
-            AccelTimer.reset();
             TargetX = 47;
-            TargetY = 2;
+            TargetY = 0;
             while (new Vector2D(TargetX - M.Drive.getPoseEstimate().getX(),
                     TargetY - M.Drive.getPoseEstimate().getY()).getLength() > 2 && !isStopRequested()) {
                 Right.this.sleep(10);
@@ -331,10 +322,7 @@ public class Right extends LinearOpMode {
                 LastXYErrorVec.set(XYErrorVec);
 
                 double AngleError = M.MinAngleError(TargetAngle - Math.toDegrees(M.Drive.getPoseEstimate().getHeading()));
-                M.Drive.setWeightedDrivePower(new Pose2d(SFPowerVec.x, SFPowerVec.y,
-                        M.Limit(AngleError * TurnKp + (AngleError - LastAngleError) * TurnKd, 1)
-                ).times(LocalWallPushing ? 1 : Math.min(1, AccelTimer.seconds() * 2)));
-                M.Drive.update();
+//                M.SetFieldOrientedDrivePower(SFPowerVec.getRotatedBy(90), M.Limit(AngleError * TurnKp + (AngleError - LastAngleError) * TurnKd, 1));
                 LastAngleError = AngleError;
             }
             M.Drive.setMotorPowers(0, 0, 0, 0);

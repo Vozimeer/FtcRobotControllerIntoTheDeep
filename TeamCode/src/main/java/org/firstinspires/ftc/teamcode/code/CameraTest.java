@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
+@Disabled
 @Autonomous
 public class CameraTest extends LinearOpMode {
     Materials M = new Materials();
@@ -52,9 +53,9 @@ public class CameraTest extends LinearOpMode {
                 }
             } else M.ExtenderResetTimer.reset();
 
+            telemetry.addData("SamplePose", M.SDP.SamplePose);
             telemetry.addData("NeedToResetExtender", M.NeedToResetExtender);
             telemetry.addData("ExtenderPos", M.ExtenderPos());
-            telemetry.addData("SamplePose", M.SDP.SamplePose);
             telemetry.update();
         }
         M.Extender.setPower(0);

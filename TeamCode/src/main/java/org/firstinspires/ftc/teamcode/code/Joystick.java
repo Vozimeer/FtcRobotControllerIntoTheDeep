@@ -8,8 +8,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 @Config
 @TeleOp
 public class Joystick extends LinearOpMode {
-    public static double ExtenderCorrectionZone = 150, ExtenderCorrectionKp = 1.2,
-            LiftHeightCorrectionSpeed = 3.2, PawPosCorrectionSpeed = 0.002;
+    public static double ExtenderCorrectionMultiply = 1.18,
+            LiftHeightCorrectionSpeed = 2.8, PawPosCorrectionSpeed = 0.0014;
 
     Materials M = new Materials();
     LowerThread LT = new LowerThread();
@@ -28,24 +28,9 @@ public class Joystick extends LinearOpMode {
         while (!isStopRequested()) {
             if (gamepad1.dpad_right) M.Drive.setPoseEstimate(new Pose2d(0, 0, Math.toRadians(90)));
 
-            double Multiply = 0.3 + (gamepad1.right_trigger * 0.7),
-                    ExtenderCorrection = M.ExtenderPos() > ExtenderCorrectionZone ? ExtenderCorrectionKp : 1;
-            Vector2D PreparedLeftStickVector = new Vector2D(gamepad1.left_stick_y, gamepad1.left_stick_x)
-                    .getRotatedBy(-M.Drive.getPoseEstimate().getHeading()).getMultiplied(Multiply);
-            double TurnSpeed = -gamepad1.right_stick_x * Multiply,
-                    FLS = PreparedLeftStickVector.x * ExtenderCorrection + PreparedLeftStickVector.y - TurnSpeed,
-                    BLS = -PreparedLeftStickVector.x + PreparedLeftStickVector.y - TurnSpeed,
-                    BRS = PreparedLeftStickVector.x + PreparedLeftStickVector.y + TurnSpeed,
-                    FRS = -PreparedLeftStickVector.x * ExtenderCorrection + PreparedLeftStickVector.y + TurnSpeed,
-                    SMax = Math.max(Math.max(Math.abs(FLS), Math.abs(BLS)), Math.max(Math.abs(BRS), Math.abs(FRS)));
-            if (SMax > 1) {
-                FLS /= SMax;
-                BLS /= SMax;
-                BRS /= SMax;
-                FRS /= SMax;
-            }
-            M.Drive.setMotorPowers(FLS, BLS, BRS, FRS);
-            M.Drive.update();
+            double Multiply = 0.3 + (gamepad1.right_trigger * 0.7);
+            M.SetFieldOrientedDrivePower(new Vector2D(gamepad1.left_stick_x, -gamepad1.left_stick_y)
+                    .getMultiplied(Multiply), -gamepad1.right_stick_x * Multiply, ExtenderCorrectionMultiply);
 
             if (gamepad1.a && !APressed && !LT.isAlive()) {
                 if (LowerChainState == 1) {

@@ -20,29 +20,31 @@ import org.openftc.easyopencv.OpenCvWebcam;
 @Config
 public class Materials {
     // 192.168.43.1:8080/dash
-    public static double AngleStorage = 90,
-            ExtenderKp = 0.0128, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 200, ExtenderMaxPos = 600,
+    public static double AngleStorage = 90, TranslationalKp = 0.32, TranslationalKd = 2, TurnKp = 0.04, TurnKd = 0.2,
+            ExtenderCorrectionZone = 200, ExtenderCorrectionMultiply = 0.6,
+
+    ExtenderKp = 0.0128, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 100, ExtenderMaxPos = 600,
 
     LiftMinKp = 0.006, LiftMaxKp = 0.05, LiftPushingStartSeconds = 0.6, LiftPushingAccel = 0.06,
-            LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 200, LiftResetUpPower = 0.078, LiftResetMilliseconds = 1000,
-            LiftThrowPos = 240, LiftClippingPos = 518, LiftBasketPos = 1200,
+            LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 100, LiftResetUpPower = 0.08, LiftResetMilliseconds = 900,
+            LiftThrowPos = 250, LiftClippingPos = 510, LiftBasketPos = 1200,
 
     SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
             PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.17, PawTransferPos = 0.36, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,
             LowerClawHardPos = 0.81, LowerClawSoftPos = 0.7694, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
 
-    MiniExtenderTransferPos = 0.414, MiniExtenderWallPos = 0.48, MiniExtenderClippingPos = 0.68,
+    MiniExtenderTransferPos = 0.414, MiniExtenderWallPos = 0.464, MiniExtenderClippingPos = 0.68,
             ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.58, ElbowClippingPos = 0.7,
             ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.21,
-            WristTransferPos = 0.71, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.34,
+            WristTransferPos = 0.71, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.33,
             UpperClawOpenedPos = 0.79, UpperClawClosedPos = 1;
 
     public SampleDetectionPipeline SDP;
     public ElapsedTime ExtenderResetTimer = new ElapsedTime(),
             LiftResetTimer = new ElapsedTime(), LiftPushingTimer = new ElapsedTime();
 
-    public double ExtenderDownPos = 0, TargetExtenderPos = 0, LiftDownPos = 0;
-    public boolean StopRequested = false, NeedToResetExtender = true, NeedToResetLift = true;
+    public double TargetX = 0, TargetY = 0, TargetAngle = 90, ExtenderDownPos = 0, TargetExtenderPos = 0, LiftDownPos = 0;
+    public boolean StopRequested = false, WallPushing = false, NeedToResetExtender = true, NeedToResetLift = true;
     public int TargetLiftState = 0;
 
     public SampleMecanumDrive Drive;
@@ -108,6 +110,49 @@ public class Materials {
     }
 
 
+    public boolean AtPlace() {
+        return new Vector2D(TargetX - Drive.getPoseEstimate().getX(),
+                TargetY - Drive.getPoseEstimate().getY()).getLength() < 2 &&
+                Math.abs(MinAngleError(TargetAngle - Math.toDegrees(Drive.getPoseEstimate().getHeading()))) < 5;
+    }
+
+    public void SetFieldOrientedDrivePower(Vector2D TranslationalPowerVec, double TurnPower, double ExtenderCorrectionMultiply) {
+        TranslationalPowerVec.rotateBy(-Drive.getPoseEstimate().getHeading());
+        if (ExtenderPos() < ExtenderCorrectionZone) ExtenderCorrectionMultiply = 1;
+        double FLS = -TranslationalPowerVec.y * ExtenderCorrectionMultiply + TranslationalPowerVec.x - TurnPower,
+                BLS = TranslationalPowerVec.y + TranslationalPowerVec.x - TurnPower,
+                BRS = -TranslationalPowerVec.y + TranslationalPowerVec.x + TurnPower,
+                FRS = TranslationalPowerVec.y * ExtenderCorrectionMultiply + TranslationalPowerVec.x + TurnPower,
+                SMax = Math.max(Math.max(Math.abs(FLS), Math.abs(BLS)), Math.max(Math.abs(BRS), Math.abs(FRS)));
+        if (SMax > 1) {
+            FLS /= SMax;
+            BLS /= SMax;
+            BRS /= SMax;
+            FRS /= SMax;
+        }
+        Drive.setMotorPowers(FLS, BLS, BRS, FRS);
+        Drive.update();
+    }
+
+    public void AutoDrivingCycle() {
+        Vector2D LastXYErrorVec = new Vector2D();
+        double LastAngleError = 0;
+        while (!StopRequested) {
+            Vector2D XYErrorVec = new Vector2D(TargetX - Drive.getPoseEstimate().getX(), TargetY - Drive.getPoseEstimate().getY()),
+                    TranslationalPowerVec = WallPushing ? new Vector2D(XYErrorVec.x * TranslationalKp + (XYErrorVec.x - LastXYErrorVec.x) * TranslationalKd, -0.4) :
+                            XYErrorVec.getMultiplied(TranslationalKp).getAdded(XYErrorVec.getSubtracted(LastXYErrorVec).getMultiplied(TranslationalKd));
+            if (TranslationalPowerVec.getLength() > 1) TranslationalPowerVec.normalize();
+            LastXYErrorVec.set(XYErrorVec);
+
+            double AngleError = MinAngleError(TargetAngle - Math.toDegrees(Drive.getPoseEstimate().getHeading()));
+            SetFieldOrientedDrivePower(TranslationalPowerVec, Limit(AngleError * TurnKp + (AngleError - LastAngleError) * TurnKd, 1),
+                    ExtenderCorrectionMultiply);
+            LastAngleError = AngleError;
+        }
+        Drive.setMotorPowers(0, 0, 0, 0);
+    }
+
+
     public double ExtenderPos() {
         return Extender.getCurrentPosition() - ExtenderDownPos;
     }
@@ -138,9 +183,9 @@ public class Materials {
     }
 
     public void LiftUpdate() {
-        double LiftResetTimerMilliseconds = LiftResetTimer.milliseconds(), LocalLiftPosError = LiftPosError();
+        double LiftResetTimerMilliseconds = LiftResetTimer.milliseconds();
         boolean ResettingUp = LiftResetTimerMilliseconds >= LiftResetDownMilliseconds;
-        SetLiftPower(NeedToResetLift ? ResettingUp ? LiftResetUpPower : LiftResetDownPower : Math.max(0, LocalLiftPosError *
+        SetLiftPower(NeedToResetLift ? ResettingUp ? LiftResetUpPower : LiftResetDownPower : Math.max(0, LiftPosError() *
                 Math.min(LiftMaxKp, LiftMinKp + (Math.max(0, LiftPushingTimer.seconds() - LiftPushingStartSeconds) * LiftPushingAccel))));
         if ((NeedToResetLift && (!LeftLiftDownEnd.getState() || !RightLiftDownEnd.getState())) || ResettingUp) {
             if (LiftResetTimerMilliseconds >= LiftResetMilliseconds) {
