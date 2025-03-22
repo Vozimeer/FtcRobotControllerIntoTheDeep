@@ -31,6 +31,7 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
             MinArea = 2000, MaxArea = 13000;
 
     public Pose2d SamplePose = null;
+    public double SampleArea = 0;
 
     @Override
     public Mat processFrame(Mat Input) {
@@ -81,6 +82,7 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
         if (LargestRect != null) {
             SamplePose = new Pose2d(LargestRect.center.x - LeftBorder, 240 - LargestRect.center.y - BottomBorder,
                     Math.toRadians(-LargestRect.angle + (LargestRect.size.width > LargestRect.size.height ? 180 : 90)));
+            SampleArea = LargestRect.size.area();
 
             Imgproc.arrowedLine(Input, new Point(LargestRect.center.x, LargestRect.center.y),
                     new Point(LargestRect.center.x + (30 * Math.cos(SamplePose.getHeading())),

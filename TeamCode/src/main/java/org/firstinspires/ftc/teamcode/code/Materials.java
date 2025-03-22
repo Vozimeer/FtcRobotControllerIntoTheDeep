@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.code;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevTouchSensor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -17,34 +18,34 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvWebcam;
 
+import java.util.List;
+
 @Config
 public class Materials {
     // 192.168.43.1:8080/dash
-    public static double AngleStorage = 90, TranslationalKp = 0.32, TranslationalKd = 2, TurnKp = 0.04, TurnKd = 0.2,
-            ExtenderCorrectionZone = 200, ExtenderCorrectionMultiply = 0.6,
+    public static double AngleStorage = 90, ExtenderCorrectionZone = 200,
+            ExtenderKp = 0.02, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 100, ExtenderMaxPos = 600,
 
-    ExtenderKp = 0.0128, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 100, ExtenderMaxPos = 600,
-
-    LiftMinKp = 0.006, LiftMaxKp = 0.05, LiftPushingStartSeconds = 0.6, LiftPushingAccel = 0.06,
-            LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 100, LiftResetUpPower = 0.08, LiftResetMilliseconds = 900,
-            LiftThrowPos = 250, LiftClippingPos = 510, LiftBasketPos = 1200,
+    LiftMinKp = 0.006, LiftMaxKp = 0.04, LiftPushingStartSeconds = 0.6, LiftPushingAccel = 0.04,
+            LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 100, LiftResetUpPower = 0.08, LiftResetMilliseconds = 700,
+            LiftThrowPos = 250, LiftClippingPos = 500, LiftBasketPos = 1200,
 
     SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
-            PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.17, PawTransferPos = 0.36, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,
-            LowerClawHardPos = 0.81, LowerClawSoftPos = 0.7694, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
+            PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.16, PawTransferPos = 0.38, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,
+            LowerClawHardPos = 0.82, LowerClawSoftPos = 0.7694, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
 
-    MiniExtenderTransferPos = 0.414, MiniExtenderWallPos = 0.464, MiniExtenderClippingPos = 0.68,
+    MiniExtenderTransferPos = 0.413, MiniExtenderWallPos = 0.47, MiniExtenderClippingPos = 0.68,
             ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.58, ElbowClippingPos = 0.7,
-            ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.21,
-            WristTransferPos = 0.71, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.33,
+            ElbowVerticalPos = 0.46, ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.25, ElbowWallPos = 0.2,
+            WristTransferPos = 0.7, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.329,
             UpperClawOpenedPos = 0.79, UpperClawClosedPos = 1;
 
     public SampleDetectionPipeline SDP;
     public ElapsedTime ExtenderResetTimer = new ElapsedTime(),
             LiftResetTimer = new ElapsedTime(), LiftPushingTimer = new ElapsedTime();
 
-    public double TargetX = 0, TargetY = 0, TargetAngle = 90, ExtenderDownPos = 0, TargetExtenderPos = 0, LiftDownPos = 0;
-    public boolean StopRequested = false, WallPushing = false, NeedToResetExtender = true, NeedToResetLift = true;
+    public double ExtenderRawPos = 0, ExtenderDownPos = 0, TargetExtenderPos = 0, LiftRawPos = 0, LiftDownPos = 0;
+    public boolean StopRequested = false, NeedToResetExtender = true, NeedToResetLift = true;
     public int TargetLiftState = 0;
 
     public SampleMecanumDrive Drive;
@@ -56,6 +57,11 @@ public class Materials {
     public OpenCvWebcam Webcam;
 
     public void Init(HardwareMap hardwareMap, boolean Storage) {
+        List<LynxModule> AllHubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule Hub : AllHubs) {
+            Hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+        }
+
         Drive = new SampleMecanumDrive(hardwareMap);
         Drive.setPoseEstimate(new Pose2d(0, 0, Math.toRadians(Storage ? AngleStorage : 90)));
 
@@ -110,12 +116,6 @@ public class Materials {
     }
 
 
-    public boolean AtPlace() {
-        return new Vector2D(TargetX - Drive.getPoseEstimate().getX(),
-                TargetY - Drive.getPoseEstimate().getY()).getLength() < 2 &&
-                Math.abs(MinAngleError(TargetAngle - Math.toDegrees(Drive.getPoseEstimate().getHeading()))) < 5;
-    }
-
     public void SetFieldOrientedDrivePower(Vector2D TranslationalPowerVec, double TurnPower, double ExtenderCorrectionMultiply) {
         TranslationalPowerVec.rotateBy(-Drive.getPoseEstimate().getHeading());
         if (ExtenderPos() < ExtenderCorrectionZone) ExtenderCorrectionMultiply = 1;
@@ -134,27 +134,9 @@ public class Materials {
         Drive.update();
     }
 
-    public void AutoDrivingCycle() {
-        Vector2D LastXYErrorVec = new Vector2D();
-        double LastAngleError = 0;
-        while (!StopRequested) {
-            Vector2D XYErrorVec = new Vector2D(TargetX - Drive.getPoseEstimate().getX(), TargetY - Drive.getPoseEstimate().getY()),
-                    TranslationalPowerVec = WallPushing ? new Vector2D(XYErrorVec.x * TranslationalKp + (XYErrorVec.x - LastXYErrorVec.x) * TranslationalKd, -0.4) :
-                            XYErrorVec.getMultiplied(TranslationalKp).getAdded(XYErrorVec.getSubtracted(LastXYErrorVec).getMultiplied(TranslationalKd));
-            if (TranslationalPowerVec.getLength() > 1) TranslationalPowerVec.normalize();
-            LastXYErrorVec.set(XYErrorVec);
-
-            double AngleError = MinAngleError(TargetAngle - Math.toDegrees(Drive.getPoseEstimate().getHeading()));
-            SetFieldOrientedDrivePower(TranslationalPowerVec, Limit(AngleError * TurnKp + (AngleError - LastAngleError) * TurnKd, 1),
-                    ExtenderCorrectionMultiply);
-            LastAngleError = AngleError;
-        }
-        Drive.setMotorPowers(0, 0, 0, 0);
-    }
-
 
     public double ExtenderPos() {
-        return Extender.getCurrentPosition() - ExtenderDownPos;
+        return ExtenderRawPos - ExtenderDownPos;
     }
 
     public double ExtenderPosError() {
@@ -165,11 +147,24 @@ public class Materials {
         return ExtenderPosError() * ExtenderKp;
     }
 
+    public void ExtenderAutoUpdate() {
+        ExtenderRawPos = Extender.getCurrentPosition();
+        Extender.setPower(NeedToResetExtender ? Materials.ExtenderResetPower : ExtenderToPosPower());
+        if (NeedToResetExtender && ExtenderDownEnd.isPressed()) {
+            if (ExtenderResetTimer.milliseconds() > Materials.ExtenderResetMilliseconds) {
+                ExtenderDownPos = ExtenderRawPos;
+                TargetExtenderPos = 0;
+                ExtenderResetTimer.reset();
+                NeedToResetExtender = false;
+            }
+        } else ExtenderResetTimer.reset();
+    }
+
 
     public double LiftPosError() {
         int LocalTargetLiftState = TargetLiftState;
         return (LocalTargetLiftState == 1 ? LiftThrowPos : LocalTargetLiftState == 2 ? LiftClippingPos :
-                LocalTargetLiftState == 3 ? LiftBasketPos : 0) - LeftLift.getCurrentPosition() + LiftDownPos;
+                LocalTargetLiftState == 3 ? LiftBasketPos : 0) - LiftRawPos + LiftDownPos;
     }
 
     public void SetLiftPower(double Power) {
@@ -183,13 +178,14 @@ public class Materials {
     }
 
     public void LiftUpdate() {
+        LiftRawPos = LeftLift.getCurrentPosition();
         double LiftResetTimerMilliseconds = LiftResetTimer.milliseconds();
         boolean ResettingUp = LiftResetTimerMilliseconds >= LiftResetDownMilliseconds;
         SetLiftPower(NeedToResetLift ? ResettingUp ? LiftResetUpPower : LiftResetDownPower : Math.max(0, LiftPosError() *
                 Math.min(LiftMaxKp, LiftMinKp + (Math.max(0, LiftPushingTimer.seconds() - LiftPushingStartSeconds) * LiftPushingAccel))));
         if ((NeedToResetLift && (!LeftLiftDownEnd.getState() || !RightLiftDownEnd.getState())) || ResettingUp) {
             if (LiftResetTimerMilliseconds >= LiftResetMilliseconds) {
-                LiftDownPos = LeftLift.getCurrentPosition();
+                LiftDownPos = LiftRawPos;
                 SetTargetLiftState(0);
                 LiftResetTimer.reset();
                 NeedToResetLift = false;
