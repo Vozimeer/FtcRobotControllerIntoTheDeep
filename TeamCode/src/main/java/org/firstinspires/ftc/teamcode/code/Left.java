@@ -10,9 +10,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class Left extends LinearOpMode {
     public static double TranslationalKp = 0.2, TranslationalKd = 1.4, TranslationalAccuracy = 2,
             TurnKp = 0.026, TurnKd = 0.12, TurnAccuracy = 4, ExtenderCorrectionMultiply = 0.6, ExtenderAccuracy = 20,
-            FirstBasketX = -16, FirstBasketY = 4, FirstSampleX = -8.3, SamplesY = 15, ExtenderFirstSamplePos = 420,
-            SecondBasketX = -16, SecondBasketY = 4, SecondSampleX = -19.6, ExtenderSecondSamplePos = 420,
-            ThirdBasketX = -16, ThirdBasketY = 4, ThirdSampleX = -19, ThirdSampleAngle = 112, ExtenderThirdSamplePos = 500,
+            FirstBasketX = -16, FirstBasketY = 4, FirstSampleX = -7.6, SamplesY = 15, ExtenderFirstSamplePos = 420,
+            SecondBasketX = -16, SecondBasketY = 4, SecondSampleX = -19, ExtenderSecondSamplePos = 435,
+            ThirdBasketX = -16, ThirdBasketY = 4, ThirdSampleX = -18.8, ThirdSampleAngle = 114, ExtenderThirdSamplePos = 500,
             FourthBasketX = -16, FourthBasketY = 4.4, ParkY = 52, ParkX = 18.6, ElbowParkPos = 0.7;
 
     Materials M = new Materials();
@@ -27,6 +27,7 @@ public class Left extends LinearOpMode {
 
         while ((M.NeedToResetExtender || M.NeedToResetLift || !isStarted()) && !isStopRequested()) ;
         new DrivingThread().start();
+        M.Wait(1000);
 
         TargetX = FirstBasketX;
         TargetY = FirstBasketY;
@@ -87,7 +88,7 @@ public class Left extends LinearOpMode {
 
         TargetX = 0;
         TargetY = ParkY;
-        TargetAngle = 0;
+        TargetAngle = 15;
         while ((!AtPlace() || RUBT.isAlive()) && !isStopRequested()) ;
 
         TargetX = ParkX;
@@ -149,6 +150,8 @@ public class Left extends LinearOpMode {
                 M.ExtenderAutoUpdate();
                 M.LiftUpdate();
 
+                telemetry.addData("Angle", Math.toDegrees(M.Drive.getPoseEstimate().getHeading()));
+                telemetry.addData("ErrorAngle", M.MinAngleError(TargetAngle - Math.toDegrees(M.Drive.getPoseEstimate().getHeading())));
                 telemetry.addData("NeedToResetExtender", M.NeedToResetExtender);
                 telemetry.addData("NeedToResetLift", M.NeedToResetLift);
                 telemetry.update();
@@ -175,7 +178,7 @@ public class Left extends LinearOpMode {
         }
 
         M.Elbow.setPosition(Materials.ElbowBasketPos);
-        M.Wait(300);
+        M.Wait(400);
         M.UpperClaw.setPosition(Materials.UpperClawOpenedPos);
         M.Wait(200);
         RUBT.start();

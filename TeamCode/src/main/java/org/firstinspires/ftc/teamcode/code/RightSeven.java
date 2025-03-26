@@ -13,8 +13,8 @@ public class RightSeven extends LinearOpMode {
             TurnKp = 0.026, TurnKd = 0.08, TurnAccuracy = 4, ExtenderCorrectionMultiply = 0.5, ExtenderAccuracy = 25,
             SampleXC = 0.8, SampleXKp = 0.041, SampleYC = 130, SampleYKp = 1.76,
             FirstClipY = 34, FirstTwoSamplesY = 11, FirstSampleX = 58.6,
-            ExtenderXTrigger = 25, ExtenderFirstSamplePos = 500, SecondSampleX = 68, ExtenderSecondSamplePos = 480, ExtenderWonderThrowPos = 200,
-            ThirdSampleY = 21, ThirdSampleAngle = 62, ExtenderThirdSamplePos = 300,
+            ExtenderXTrigger = 25, ExtenderFirstSamplePos = 500, SecondSampleX = 68, ExtenderSecondSamplePos = 490, ExtenderWonderThrowPos = 200,
+            ThirdSampleY = 21, ThirdSampleAngle = 59, ExtenderThirdSamplePos = 290,
             ClipPrepareY = 29, ClippingStartX = -2.4, MiniExtenderXTrigger = 20, ClipY = 34.8, CameraIntakeY = 33, WallIntakeX = 48, WallIntakeY = 1;
 
     Materials M = new Materials();
