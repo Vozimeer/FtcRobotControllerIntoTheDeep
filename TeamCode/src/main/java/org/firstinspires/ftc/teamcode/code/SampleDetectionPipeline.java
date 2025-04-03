@@ -24,20 +24,31 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
         this.Red = Red;
     }
 
-    public static Scalar LowerRed1 = new Scalar(0, 100, 100), UpperRed1 = new Scalar(10, 255, 255),
-            LowerRed2 = new Scalar(160, 100, 100), UpperRed2 = new Scalar(180, 255, 255),
-            LowerBlue = new Scalar(100, 75, 75), UpperBlue = new Scalar(140, 255, 255);
-    public static double LeftBorder = 40, RightBorder = 40, UpBorder = 40, BottomBorder = 40,
-            MinArea = 2000, MaxArea = 13000;
+    public static Scalar LowerRed1 = new Scalar(0, 75, 46), UpperRed1 = new Scalar(10, 255, 255),
+            LowerRed2 = new Scalar(160, 0, 0), UpperRed2 = new Scalar(180, 255, 255),
+            LowerBlue = new Scalar(100, 60, 0), UpperBlue = new Scalar(140, 255, 255);
+    public static double TrapTopLeftX = 50, TrapTopRightX = 270, TrapTopY = 40,
+            TrapBottomLeftX = 100, TrapBottomRightX = 220, TrapBottomY = 200, MinArea = 2000, MaxArea = 6000;
+    public static Point[] SourcePoints = {new Point(0, 0), new Point(320, 0),
+            new Point(440, 240), new Point(-120, 240)},
+            DestPoints = {new Point(0, 0), new Point(320, 0),
+                    new Point(320, 240), new Point(0, 240)};
 
     public Pose2d SamplePose = null;
     public double SampleArea = 0;
 
     @Override
     public Mat processFrame(Mat Input) {
+        MatOfPoint2f SourceMat = new MatOfPoint2f(SourcePoints);
+        MatOfPoint2f DestMat = new MatOfPoint2f(DestPoints);
+        Mat PerspectiveTransformMatrix = Imgproc.getPerspectiveTransform(SourceMat, DestMat);
+        SourceMat.release();
+        DestMat.release();
+        Imgproc.warpPerspective(Input, Input, PerspectiveTransformMatrix, Input.size());
+        PerspectiveTransformMatrix.release();
+
         Mat HSV = new Mat();
         Imgproc.cvtColor(Input, HSV, Imgproc.COLOR_RGB2HSV);
-
         Mat Color = new Mat();
         if (Red) {
             Mat Red1 = new Mat();
@@ -60,36 +71,57 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
         Color.release();
         Hierarchy.release();
 
-        RotatedRect LargestRect = null;
+        Point[] TrapPoints = {new Point(TrapTopLeftX, TrapTopY), new Point(TrapTopRightX, TrapTopY),
+                new Point(TrapBottomRightX, TrapBottomY), new Point(TrapBottomLeftX, TrapBottomY)};
+        for (int i = 0; i < 4; i++) {
+            Imgproc.line(Input, TrapPoints[i], TrapPoints[(i + 1) % 4], new Scalar(255, 255, 255), 1);
+        }
+        Imgproc.line(Input, new Point(160, 0), new Point(160, 240), new Scalar(255, 255, 255), 1);
+        Imgproc.line(Input, new Point(0, 120), new Point(320, 120), new Scalar(255, 255, 255), 1);
+
+        RotatedRect TargetRect = null;
         for (MatOfPoint Contour : Contours) {
             MatOfPoint2f Contour2f = new MatOfPoint2f(Contour.toArray());
             Contour.release();
             RotatedRect DetectedRect = Imgproc.minAreaRect(Contour2f);
             Contour2f.release();
 
-            if (DetectedRect.size.area() > MinArea && DetectedRect.size.area() < MaxArea &&
-                    DetectedRect.center.x > LeftBorder && DetectedRect.center.x < 320 - RightBorder &&
-                    DetectedRect.center.y > UpBorder && DetectedRect.center.y < 240 - BottomBorder) {
-                if (LargestRect != null) {
-                    if (DetectedRect.size.area() > LargestRect.size.area())
-                        LargestRect = DetectedRect;
-                } else LargestRect = DetectedRect;
+            if (DetectedRect.size.area() >= MinArea && DetectedRect.size.area() <= MaxArea && InsideTrapezoid(DetectedRect.center, TrapPoints)) {
+                Point[] DetectedRectPoints = new Point[4];
+                DetectedRect.points(DetectedRectPoints);
+                for (int i = 0; i < 4; i++) {
+                    Imgproc.line(Input, DetectedRectPoints[i], DetectedRectPoints[(i + 1) % 4], new Scalar(66, 228, 245), 2);
+                }
+
+                if (TargetRect != null) {
+                    if (DetectedRect.center.x < TargetRect.center.x)
+                        TargetRect = DetectedRect;
+                } else TargetRect = DetectedRect;
             }
         }
 
-        Imgproc.rectangle(Input, new Point(LeftBorder, UpBorder),
-                new Point(320 - RightBorder, 240 - BottomBorder), new Scalar(255, 0, 0), 1);
-        if (LargestRect != null) {
-            SamplePose = new Pose2d(LargestRect.center.x - LeftBorder, 240 - LargestRect.center.y - BottomBorder,
-                    Math.toRadians(-LargestRect.angle + (LargestRect.size.width > LargestRect.size.height ? 180 : 90)));
-            SampleArea = LargestRect.size.area();
+        if (TargetRect != null) {
+            SamplePose = new Pose2d(TargetRect.center.x - 160, -TargetRect.center.y + 120,
+                    Math.toRadians(-TargetRect.angle + (TargetRect.size.width > TargetRect.size.height ? 180 : 90)));
+            SampleArea = TargetRect.size.area();
 
-            Imgproc.arrowedLine(Input, new Point(LargestRect.center.x, LargestRect.center.y),
-                    new Point(LargestRect.center.x + (30 * Math.cos(SamplePose.getHeading())),
-                            LargestRect.center.y + (30 * -Math.sin(SamplePose.getHeading()))),
-                    new Scalar(0, 255, 0), 2);
+            Imgproc.arrowedLine(Input, new Point(TargetRect.center.x, TargetRect.center.y),
+                    new Point(TargetRect.center.x + (25 * Math.cos(SamplePose.getHeading())),
+                            TargetRect.center.y + (25 * -Math.sin(SamplePose.getHeading()))),
+                    new Scalar(66, 255, 66), 2);
         } else SamplePose = null;
 
         return Input;
+    }
+
+    private boolean InsideTrapezoid(Point DetectedRectCenter, Point[] TrapPoints) {
+        return Left(TrapPoints[0], TrapPoints[1], DetectedRectCenter) &&
+                Left(TrapPoints[1], TrapPoints[2], DetectedRectCenter) &&
+                Left(TrapPoints[2], TrapPoints[3], DetectedRectCenter) &&
+                Left(TrapPoints[3], TrapPoints[0], DetectedRectCenter);
+    }
+
+    private boolean Left(Point A, Point B, Point C) {
+        return ((B.x - A.x) * (C.y - A.y) - (B.y - A.y) * (C.x - A.x)) > 0;
     }
 }

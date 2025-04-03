@@ -1,11 +1,15 @@
 package org.firstinspires.ftc.teamcode.code;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+@Config
 @TeleOp
 public class Joystick extends LinearOpMode {
+    public static double PawCosKp = 0.04;
+
     Materials M = new Materials();
     LowerThread LT = new LowerThread();
     UpperThread UT = new UpperThread();
@@ -331,7 +335,8 @@ public class Joystick extends LinearOpMode {
                 M.LiftUpdate();
 
                 int LocalSwingState = SwingState;
-                M.Swing.setPosition(LocalSwingState == -1 ? gamepad1.left_bumper ? Materials.SwingBottomPos : Materials.SwingPreparePos :
+                M.Swing.setPosition(LocalSwingState == -1 ? (gamepad1.left_bumper ? Materials.SwingBottomPos :
+                        Materials.SwingPreparePos - (1 - Math.cos(Math.toRadians(PawCurrentAngle))) * PawCosKp) :
                         LocalSwingState == 0 ? Materials.SwingInsidePos : LocalSwingState == 1 ? Materials.SwingTransferPos : Materials.SwingCheckPos);
 
                 if (gamepad1.touchpad_finger_1)

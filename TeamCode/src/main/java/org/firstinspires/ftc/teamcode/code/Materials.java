@@ -30,7 +30,7 @@ public class Materials {
             LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 100, LiftResetUpPower = 0.08, LiftResetMilliseconds = 700,
             LiftThrowPos = 250, LiftClippingPos = 500, LiftBasketPos = 1200,
 
-    SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.47, SwingBottomPos = 0.58,
+    SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.5, SwingBottomPos = 0.58,
             PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.16, PawTransferPos = 0.38, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,
             LowerClawHardPos = 0.82, LowerClawSoftPos = 0.7694, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
 
