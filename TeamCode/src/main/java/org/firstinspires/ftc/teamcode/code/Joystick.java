@@ -1,15 +1,11 @@
 package org.firstinspires.ftc.teamcode.code;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-@Config
 @TeleOp
 public class Joystick extends LinearOpMode {
-    public static double PawCosKp = 0.04;
-
     Materials M = new Materials();
     LowerThread LT = new LowerThread();
     UpperThread UT = new UpperThread();
@@ -32,27 +28,39 @@ public class Joystick extends LinearOpMode {
         while (!isStopRequested()) {
             if (gamepad1.dpad_right) M.Drive.setPoseEstimate(new Pose2d(0, 0, Math.toRadians(90)));
 
-            double Multiply = 0.3 + (gamepad1.right_trigger * 0.7);
+            double Multiply = 0.2 + (gamepad1.right_trigger * 0.8);
             M.SetFieldOrientedDrivePower(new Vector2D(gamepad1.left_stick_x, -gamepad1.left_stick_y)
-                    .getMultiplied(Multiply), -gamepad1.right_stick_x * Multiply, 1.16);
+                    .getMultiplied(Multiply), -gamepad1.right_stick_x * Multiply, 1.17);
 
             if (gamepad1.a && !APressed && !LT.isAlive()) {
                 if (LowerChainState == 1) {
                     if (UT.isAlive()) {
                         if (UT.Action.equals("ToWallPrepare")) {
                             APressed = true;
-                            LT.SetAction("LowerIntake");
-                            LT.start();
+                            if (SwingState == -2) {
+                                LT.SetAction("LowerIntake");
+                                LT.start();
+                            } else SwingState = -2;
                         }
                     } else if (UpperChainState == 0) {
                         APressed = true;
-                        LT.SetAction("LowerIntake");
+                        if (SwingState == -2) {
+                            LT.SetAction("LowerIntake");
+                            LT.start();
+                        } else SwingState = -2;
+                    }
+                } else if (!UT.isAlive() && UpperChainState == 0) {
+                    if (LowerChainState == 2) {
+                        APressed = true;
+                        LT.SetAction("Transfer");
+                        LT.start();
+                    } else if (LowerChainState == 3) {
+                        APressed = true;
+                        UT.SetAction("UpForThrow");
+                        UT.start();
+                        LT.SetAction("DeclineThrow");
                         LT.start();
                     }
-                } else if (LowerChainState == 2 && !UT.isAlive() && UpperChainState == 0) {
-                    APressed = true;
-                    LT.SetAction("Transfer");
-                    LT.start();
                 }
             }
             if (!gamepad1.a) APressed = false;
@@ -108,6 +116,8 @@ public class Joystick extends LinearOpMode {
                 LT.start();
             }
             if (!gamepad1.right_bumper) RBPressed = false;
+
+            if (gamepad1.right_stick_button && SwingState == -2) SwingState = -1;
         }
         M.Drive.setMotorPowers(0, 0, 0, 0);
     }
@@ -161,8 +171,8 @@ public class Joystick extends LinearOpMode {
                             M.NeedToResetExtender = true;
                             SwingState = 0;
                             M.Wait(100);
-                            PawState = 0;
                             M.LowerClaw.setPosition(Materials.LowerClawMidPos);
+                            PawState = 0;
                         }
                         while (M.NeedToResetExtender && !isStopRequested()) ;
                     }
@@ -219,6 +229,14 @@ public class Joystick extends LinearOpMode {
                     M.Elbow.setPosition(Materials.ElbowBasketPos);
                     UpperChainState = 2;
                     break;
+                case "DeclineThrow":
+                    ExtenderActive = true;
+                    PawState = 0;
+                    M.Wait(100);
+                    SwingState = 2;
+                    M.Wait(200);
+                    LowerChainState = 2;
+                    break;
             }
         }
     }
@@ -266,7 +284,7 @@ public class Joystick extends LinearOpMode {
                     M.UpperClaw.setPosition(Materials.UpperClawClosedPos);
                     M.Wait(150);
                     M.SetTargetLiftState(2);
-                    M.Wait(150);
+                    M.Wait(200);
                     M.Elbow.setPosition(Materials.ElbowClippingPos);
                     M.Wrist.setPosition(Materials.WristClippingPos);
                     M.MiniExtender.setPosition(Materials.MiniExtenderClippingPos);
@@ -335,8 +353,8 @@ public class Joystick extends LinearOpMode {
                 M.LiftUpdate();
 
                 int LocalSwingState = SwingState;
-                M.Swing.setPosition(LocalSwingState == -1 ? (gamepad1.left_bumper ? Materials.SwingBottomPos :
-                        Materials.SwingPreparePos - (1 - Math.cos(Math.toRadians(PawCurrentAngle))) * PawCosKp) :
+                M.Swing.setPosition(LocalSwingState == -2 ? gamepad1.left_bumper ? Materials.SwingBottomPos :
+                        Materials.SwingSubmarinePos : LocalSwingState == -1 ? Materials.SwingPreparePos :
                         LocalSwingState == 0 ? Materials.SwingInsidePos : LocalSwingState == 1 ? Materials.SwingTransferPos : Materials.SwingCheckPos);
 
                 if (gamepad1.touchpad_finger_1)
@@ -358,14 +376,16 @@ public class Joystick extends LinearOpMode {
                             Materials.PawTransferPos, PawCurrentAngle);
                 }
 
+                if (gamepad2.a) Materials.LiftClippingPos -= 2.8;
+                if (gamepad2.b) Materials.LiftClippingPos += 2.8;
+                if (gamepad2.x) Materials.LiftBasketPos -= 2.8;
+                if (gamepad2.y) Materials.LiftBasketPos += 2.8;
                 if (gamepad2.dpad_right) {
-                    if (gamepad2.a) Materials.LiftClippingPos -= 2.8;
-                    if (gamepad2.b) Materials.LiftClippingPos += 2.8;
-                    if (gamepad2.x) Materials.LiftBasketPos -= 2.8;
-                    if (gamepad2.y) Materials.LiftBasketPos += 2.8;
                     Materials.PawStartPos -= gamepad2.right_stick_y * 0.0014;
                     Materials.PawStartRotation -= gamepad2.right_stick_x * (0.0014 * 0.5);
                 }
+                if (gamepad2.dpad_down) Materials.LiftBasketPos = 500;
+                if (gamepad2.dpad_up) Materials.LiftBasketPos = 1200;
 
                 telemetry.addData("NeedToResetExtender", M.NeedToResetExtender);
                 telemetry.addData("NeedToResetLift", M.NeedToResetLift);

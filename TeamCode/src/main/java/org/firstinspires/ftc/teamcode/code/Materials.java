@@ -24,20 +24,20 @@ import java.util.List;
 public class Materials {
     // 192.168.43.1:8080/dash
     public static double AngleStorage = 90, ExtenderCorrectionZone = 200,
-            ExtenderKp = 0.02, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 100, ExtenderMaxPos = 600,
+            ExtenderKp = 0.02, ExtenderResetPower = -0.8, ExtenderResetMilliseconds = 100, ExtenderMaxPos = 680,
 
     LiftMinKp = 0.006, LiftMaxKp = 0.04, LiftPushingStartSeconds = 0.6, LiftPushingAccel = 0.04,
             LiftResetDownPower = -0.2, LiftResetDownMilliseconds = 100, LiftResetUpPower = 0.08, LiftResetMilliseconds = 700,
             LiftThrowPos = 250, LiftClippingPos = 500, LiftBasketPos = 1200,
 
-    SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.5, SwingBottomPos = 0.58,
-            PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.16, PawTransferPos = 0.38, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,
-            LowerClawHardPos = 0.82, LowerClawSoftPos = 0.7694, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
+    SwingInsidePos = 0.04, SwingTransferPos = 0.26, SwingCheckPos = 0.3, SwingPreparePos = 0.45, SwingSubmarinePos = 0.5, SwingBottomPos = 0.57,
+            PawStartPos = 0, PawFoldPos = 0.05, PawThrowPos = 0.18, PawTransferPos = 0.38, PawStartRotation = 0.532, PawAngleMultiply = 0.0017,
+            LowerClawHardPos = 0.82, LowerClawSoftPos = 0.7696, LowerClawMidPos = 0.71, LowerClawOpenedPos = 0.6,
 
-    MiniExtenderTransferPos = 0.413, MiniExtenderWallPos = 0.47, MiniExtenderClippingPos = 0.68,
+    MiniExtenderTransferPos = 0.413, MiniExtenderWallPos = 0.4778, MiniExtenderClippingPos = 0.68,
             ElbowTransferPos = 0.75, ElbowTransferPreparePos = 0.58, ElbowClippingPos = 0.7,
-            ElbowVerticalPos = 0.46, ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.25, ElbowWallPos = 0.2,
-            WristTransferPos = 0.7, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.329,
+            ElbowVerticalPos = 0.46, ElbowBasketPos = 0.3, ElbowWallPreparePos = 0.26, ElbowWallPos = 0.21,
+            WristTransferPos = 0.7, WristClippingPos = 0.6, WristStraightPos = 0.52, WristWallPos = 0.34,
             UpperClawOpenedPos = 0.79, UpperClawClosedPos = 1;
 
     public SampleDetectionPipeline SDP;

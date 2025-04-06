@@ -9,8 +9,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 @Autonomous
 public class CameraIntake extends LinearOpMode {
     public static double TranslationalKp = 0.2, TranslationalKd = 1.4,
-            TurnKp = 0.026, TurnKd = 0.08, ExtenderCorrectionMultiply = 0.5,
-            SampleXC = 0, SampleXKp = 0.046, SampleYC = 130, SampleYKp = 1.7;
+            TurnKp = 0.028, TurnKd = 0.08, ExtenderCorrectionMultiply = 0.5,
+            SampleXC = 4.8, SampleXKp = 0.078, SampleYC = 345, SampleYKp = 1.66;
 
     Materials M = new Materials();
 
@@ -32,8 +32,8 @@ public class CameraIntake extends LinearOpMode {
         }
         new DrivingThread().start();
         M.InitOpenCV(hardwareMap, Red);
-        M.SetTargetLiftState(1);
         M.Swing.setPosition(Materials.SwingPreparePos);
+        M.Wait(200);
         M.LowerClaw.setPosition(Materials.LowerClawOpenedPos);
         while (!gamepad1.dpad_down && !isStopRequested()) ;
 
@@ -43,7 +43,8 @@ public class CameraIntake extends LinearOpMode {
             M.TargetExtenderPos = Math.min(SampleYC + LocalSamplePose.getY() * SampleYKp, Materials.ExtenderMaxPos);
             double PawTargetAngle = Math.toDegrees(LocalSamplePose.getHeading());
             M.SetPaw(Materials.PawFoldPos, (PawTargetAngle > 90 ? PawTargetAngle - 90 : -(90 - PawTargetAngle)));
-            M.Wait(2000);
+            while (gamepad1.dpad_down && !isStopRequested()) ;
+            while (!gamepad1.dpad_down && !isStopRequested()) ;
         }
     }
 

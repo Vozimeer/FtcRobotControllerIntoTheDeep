@@ -27,8 +27,7 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
     public static Scalar LowerRed1 = new Scalar(0, 75, 46), UpperRed1 = new Scalar(10, 255, 255),
             LowerRed2 = new Scalar(160, 0, 0), UpperRed2 = new Scalar(180, 255, 255),
             LowerBlue = new Scalar(100, 60, 0), UpperBlue = new Scalar(140, 255, 255);
-    public static double TrapTopLeftX = 50, TrapTopRightX = 270, TrapTopY = 40,
-            TrapBottomLeftX = 100, TrapBottomRightX = 220, TrapBottomY = 200, MinArea = 2000, MaxArea = 6000;
+    public static double TrapTopX = 50, TrapTopY = 40, TrapBottomX = 100, TrapBottomY = 200, MinArea = 2000, MaxArea = 6000;
     public static Point[] SourcePoints = {new Point(0, 0), new Point(320, 0),
             new Point(440, 240), new Point(-120, 240)},
             DestPoints = {new Point(0, 0), new Point(320, 0),
@@ -71,8 +70,8 @@ public class SampleDetectionPipeline extends OpenCvPipeline {
         Color.release();
         Hierarchy.release();
 
-        Point[] TrapPoints = {new Point(TrapTopLeftX, TrapTopY), new Point(TrapTopRightX, TrapTopY),
-                new Point(TrapBottomRightX, TrapBottomY), new Point(TrapBottomLeftX, TrapBottomY)};
+        Point[] TrapPoints = {new Point(TrapTopX, TrapTopY), new Point(320 - TrapTopX, TrapTopY),
+                new Point(320 - TrapBottomX, TrapBottomY), new Point(TrapBottomX, TrapBottomY)};
         for (int i = 0; i < 4; i++) {
             Imgproc.line(Input, TrapPoints[i], TrapPoints[(i + 1) % 4], new Scalar(255, 255, 255), 1);
         }
